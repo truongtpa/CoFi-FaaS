@@ -1,0 +1,41 @@
+Sort [supp_nation#2931 ASC NULLS FIRST, cust_nation#2932 ASC NULLS FIRST, l_year#2933 ASC NULLS FIRST], true, 0
++- HashAggregate(keys=[supp_nation#2931, cust_nation#2932, l_year#2933], functions=[sum(volume#2934)], output=[supp_nation#2931, cust_nation#2932, l_year#2933, revenue#2935])
+   +- HashAggregate(keys=[supp_nation#2931, cust_nation#2932, l_year#2933], functions=[partial_sum(volume#2934)], output=[supp_nation#2931, cust_nation#2932, l_year#2933, sum#2953, isEmpty#2954])
+      +- Project [n_name#121 AS supp_nation#2931, n_name#2937 AS cust_nation#2932, year(l_shipdate#10) AS l_year#2933, (l_extendedprice#5 * (1 - l_discount#6)) AS volume#2934]
+         +- BroadcastHashJoin [c_nationkey#57L], [n_nationkey#2936L], Inner, BuildRight, (((n_name#121 = ETHIOPIA) AND (n_name#2937 = IRAN)) OR ((n_name#121 = IRAN) AND (n_name#2937 = ETHIOPIA))), false
+            :- Project [l_extendedprice#5, l_discount#6, l_shipdate#10, c_nationkey#57L, n_name#121]
+            :  +- BroadcastHashJoin [s_nationkey#107L], [n_nationkey#120L], Inner, BuildRight, false
+            :     :- Project [s_nationkey#107L, l_extendedprice#5, l_discount#6, l_shipdate#10, c_nationkey#57L]
+            :     :  +- SortMergeJoin [o_custkey#35L], [c_custkey#54L], Inner
+            :     :     :- Project [s_nationkey#107L, l_extendedprice#5, l_discount#6, l_shipdate#10, o_custkey#35L]
+            :     :     :  +- SortMergeJoin [l_orderkey#0L], [o_orderkey#34L], Inner
+            :     :     :     :- Project [s_nationkey#107L, l_orderkey#0L, l_extendedprice#5, l_discount#6, l_shipdate#10]
+            :     :     :     :  +- SortMergeJoin [s_suppkey#104L], [l_suppkey#2L], Inner
+            :     :     :     :     :- Project [s_suppkey#104L, s_nationkey#107L]
+            :     :     :     :     :  +- Filter ((isnotnull(s_suppkey#104L) AND isnotnull(s_nationkey#107L)) AND might_contain(scalar-subquery#2947 [], xxhash64(s_nationkey#107L, 42)))
+            :     :     :     :     :     :  +- Aggregate [bloom_filter_agg(xxhash64(n_nationkey#120L, 42), 1000000, 8388608, 0, 0) AS bloomFilter#2946]
+            :     :     :     :     :     :     +- Project [n_nationkey#120L]
+            :     :     :     :     :     :        +- Project [n_nationkey#120L]
+            :     :     :     :     :     :           +- Filter (isnotnull(n_nationkey#120L) AND ((n_name#121 = ETHIOPIA) OR (n_name#121 = IRAN)))
+            :     :     :     :     :     :              +- Relation [n_nationkey#120L,n_name#121,n_regionkey#122L,n_comment#123] parquet
+            :     :     :     :     :     +- FileScan parquet [s_suppkey#104L,s_nationkey#107L] Batched: true, DataFilters: [isnotnull(s_suppkey#104L), isnotnull(s_nationkey#107L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/supplier.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(s_suppkey), IsNotNull(s_nationkey)], ReadSchema: struct<s_suppkey:bigint,s_nationkey:bigint>
+            :     :     :     :     +- Project [l_orderkey#0L, l_suppkey#2L, l_extendedprice#5, l_discount#6, l_shipdate#10]
+            :     :     :     :        +- Filter ((((isnotnull(l_shipdate#10) AND (l_shipdate#10 >= 1995-01-01)) AND (l_shipdate#10 <= 1996-12-31)) AND isnotnull(l_suppkey#2L)) AND isnotnull(l_orderkey#0L))
+            :     :     :     :           +- FileScan parquet [l_orderkey#0L,l_suppkey#2L,l_extendedprice#5,l_discount#6,l_shipdate#10] Batched: true, DataFilters: [isnotnull(l_shipdate#10), (l_shipdate#10 >= 1995-01-01), (l_shipdate#10 <= 1996-12-31), isnotnul..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), GreaterThanOrEqual(l_shipdate,1995-01-01), LessThanOrEqual(l_shipdate,199..., ReadSchema: struct<l_orderkey:bigint,l_suppkey:bigint,l_extendedprice:decimal(11,2),l_discount:decimal(11,2),...
+            :     :     :     +- Project [o_orderkey#34L, o_custkey#35L]
+            :     :     :        +- Filter (isnotnull(o_orderkey#34L) AND isnotnull(o_custkey#35L))
+            :     :     :           +- FileScan parquet [o_orderkey#34L,o_custkey#35L] Batched: true, DataFilters: [isnotnull(o_orderkey#34L), isnotnull(o_custkey#35L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_orderkey), IsNotNull(o_custkey)], ReadSchema: struct<o_orderkey:bigint,o_custkey:bigint>
+            :     :     +- Project [c_custkey#54L, c_nationkey#57L]
+            :     :        +- Filter ((isnotnull(c_custkey#54L) AND isnotnull(c_nationkey#57L)) AND might_contain(scalar-subquery#2950 [], xxhash64(c_nationkey#57L, 42)))
+            :     :           :  +- Aggregate [bloom_filter_agg(xxhash64(n_nationkey#120L, 42), 1000000, 8388608, 0, 0) AS bloomFilter#2946]
+            :     :           :     +- Project [n_nationkey#120L]
+            :     :           :        +- Project [n_nationkey#120L]
+            :     :           :           +- Filter (isnotnull(n_nationkey#120L) AND ((n_name#121 = ETHIOPIA) OR (n_name#121 = IRAN)))
+            :     :           :              +- Relation [n_nationkey#120L,n_name#121,n_regionkey#122L,n_comment#123] parquet
+            :     :           +- FileScan parquet [c_custkey#54L,c_nationkey#57L] Batched: true, DataFilters: [isnotnull(c_custkey#54L), isnotnull(c_nationkey#57L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_custkey), IsNotNull(c_nationkey)], ReadSchema: struct<c_custkey:bigint,c_nationkey:bigint>
+            :     +- Project [n_nationkey#120L, n_name#121]
+            :        +- Filter (isnotnull(n_nationkey#120L) AND ((n_name#121 = ETHIOPIA) OR (n_name#121 = IRAN)))
+            :           +- FileScan parquet [n_nationkey#120L,n_name#121] Batched: true, DataFilters: [isnotnull(n_nationkey#120L), ((n_name#121 = ETHIOPIA) OR (n_name#121 = IRAN))], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/nation.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(n_nationkey), Or(EqualTo(n_name,ETHIOPIA),EqualTo(n_name,IRAN))], ReadSchema: struct<n_nationkey:bigint,n_name:string>
+            +- Project [n_nationkey#2936L, n_name#2937]
+               +- Filter (isnotnull(n_nationkey#2936L) AND ((n_name#2937 = IRAN) OR (n_name#2937 = ETHIOPIA)))
+                  +- FileScan parquet [n_nationkey#2936L,n_name#2937] Batched: true, DataFilters: [isnotnull(n_nationkey#2936L), ((n_name#2937 = IRAN) OR (n_name#2937 = ETHIOPIA))], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/nation.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(n_nationkey), Or(EqualTo(n_name,IRAN),EqualTo(n_name,ETHIOPIA))], ReadSchema: struct<n_nationkey:bigint,n_name:string>

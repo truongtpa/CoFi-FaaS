@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+export JAVA_HOME=/usr/lib/jvm/java-{{ java_version }}-openjdk-amd64
+export SPARK_HOME={{ spark_home }}
+export SPARK_LOCAL_DIRS={{ spark_local_dirs }}
+export SPARK_LOG_DIR={{ spark_log_dir }}
+
+{% if 'spark-master' in group_names %}
+    export SPARK_MASTER_HOST={{ spark_master_host }}
+    export SPARK_MASTER_PORT={{ spark_master_port }}
+    export SPARK_MASTER_WEBUI_PORT={{ spark_master_webui_port }}
+{% endif %}
+
+{% if 'spark-workers' in group_names %}
+    export SPARK_WORKER_CORES={{ spark_worker_cores }}
+    export SPARK_WORKER_MEMORY={{ spark_worker_memory }}
+    export SPARK_WORKER_WEBUI_PORT={{ spark_worker_webui_port }}
+{% endif %}
+
+export PYSPARK_PYTHON=/usr/bin/python3

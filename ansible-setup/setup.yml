@@ -1,0 +1,41 @@
+---
+# Master Playbook - Run all infrastructure setup playbooks
+# Usage: ansible-playbook run-all.yml
+#        ansible-playbook run-all.yml --tags k8s
+#        ansible-playbook run-all.yml --skip-tags monitoring,nfs,docker
+
+- name: "[k8s-ansible] Run site.yml"
+  tags: [k8s, always_k8s]
+  import_playbook: k8s-ansible/site.yml
+
+- name: "[k8s-ansible] Install NFS client"
+  tags: [k8s, nfs-client]
+  import_playbook: k8s-ansible/install-nfs-client.yml
+
+# ============================================================
+# Uncomment below sections as needed
+# ============================================================
+
+# - name: "[monitoring] Install InfluxDB"
+#   tags: [monitoring, influxdb]
+#   import_playbook: monitoring-playbooks/install-influxdb.yml
+
+# - name: "[monitoring] Install monitoring stack"
+#   tags: [monitoring]
+#   import_playbook: monitoring-playbooks/install-monitoring.yml
+
+# - name: "[monitoring] Install Telegraf"
+#   tags: [monitoring, telegraf]
+#   import_playbook: monitoring-playbooks/install-telegraf.yml
+
+# - name: "[nfs-storage] Run site.yml"
+#   tags: [nfs, storage]
+#   import_playbook: nfs-storage/site.yml
+
+# - name: "[docker] Install MinIO Enterprise + Nginx + Ramdisk"
+#   tags: [docker, minio]
+#   import_playbook: docker-playbooks/install-minio-enterprise-nginx-ramdisk.yml
+
+# - name: "[docker] Setup MinIO client (mc)"
+#   tags: [docker, minio, mc]
+#   import_playbook: docker-playbooks/setup-mc.yml

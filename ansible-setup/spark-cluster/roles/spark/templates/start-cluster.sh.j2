@@ -1,0 +1,34 @@
+#!/bin/bash
+# Spark Cluster Start Script
+
+cd {{ spark_home }}
+
+echo "=================================="
+echo "Starting Spark Cluster"
+echo "=================================="
+echo ""
+
+echo "Starting Spark Master..."
+sbin/start-master.sh
+
+echo "Waiting for master to initialize..."
+sleep 5
+
+echo "Starting Spark Workers..."
+sbin/start-workers.sh
+
+echo ""
+echo "Waiting for workers to connect..."
+sleep 3
+
+echo ""
+echo "=================================="
+echo "Checking Cluster Status"
+echo "=================================="
+jps
+
+echo ""
+echo "=================================="
+echo "Spark Master Web UI:"
+echo "http://{{ spark_master_host }}:{{ spark_master_webui_port }}"
+echo "=================================="

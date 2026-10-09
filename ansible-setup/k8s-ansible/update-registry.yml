@@ -1,0 +1,56 @@
+---
+- name: Configure private registry (HTTP) for containerd on all nodes
+  hosts: all
+  become: true
+  vars:
+    private_registry_host: "10.158.1.10:32000"
+
+  tasks:
+
+    - name: Create certs.d directory for private registry
+      file:
+        path: "/etc/containerd/certs.d/{{ private_registry_host }}"
+        state: directory
+        mode: '0755'
+
+    - name: Write hosts.toml – HTTP, skip TLS
+      copy:
+        dest: "/etc/containerd/certs.d/{{ private_registry_host }}/hosts.toml"
+        mode: '0644'
+        content: |
+          server = "http://{{ private_registry_host }}"
+
+          [host."http://{{ private_registry_host }}"]
+            capabilities = ["pull", "resolve", "push"]
+            skip_verify = true
+      notify: restart containerd
+
+    - name: Enable config_path – match single quote variant
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: "config_path = ''"
+        replace: "config_path = '/etc/containerd/certs.d'"
+      notify: restart containerd
+
+    - name: Enable config_path – match double quote variant
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'config_path = ""'
+        replace: 'config_path = "/etc/containerd/certs.d"'
+      notify: restart containerd
+
+    - name: Verify config_path is set
+      command: grep config_path /etc/containerd/config.toml
+      register: config_path_check
+      changed_when: false
+
+    - name: Show config_path value
+      debug:
+        var: config_path_check.stdout_lines
+
+  handlers:
+    - name: restart containerd
+      systemd:
+        name: containerd
+        state: restarted
+        daemon_reload: yes

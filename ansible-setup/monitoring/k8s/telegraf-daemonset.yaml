@@ -1,0 +1,169 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: telegraf
+  namespace: monitoring
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: telegraf
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - nodes/stats
+      - pods
+      - endpoints
+      - services
+      - persistentvolumes
+      - persistentvolumeclaims
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: telegraf
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: telegraf
+subjects:
+  - kind: ServiceAccount
+    name: telegraf
+    namespace: monitoring
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-config
+  namespace: monitoring
+data:
+  telegraf.conf: |
+    [global_tags]
+      cluster = "k8s-cluster"
+
+    [agent]
+      interval          = "10s"
+      round_interval    = true
+      metric_batch_size = 1000
+      metric_buffer_limit = 10000
+      flush_interval    = "10s"
+      hostname          = "$HOSTNAME"
+      omit_hostname     = false
+
+    [[outputs.influxdb_v2]]
+      urls         = ["http://10.158.1.30:8086"]
+      token        = "2KrOPKi1a-MXF27HwPsgK-RU8U33mPtu2WZx9pc4-bZR5sMiwC0Y6tKIMs39v212GXS43bQ9M7o97lXcimm2Qw=="
+      organization = "myorg"
+      bucket       = "metrics"
+
+    [[inputs.cpu]]
+      percpu           = true
+      totalcpu         = true
+      collect_cpu_time = false
+      report_active    = false
+
+    [[inputs.mem]]
+
+    [[inputs.disk]]
+      ignore_fs = ["tmpfs", "devtmpfs", "devfs", "iso9660", "overlay", "aufs", "squashfs"]
+
+    [[inputs.diskio]]
+
+    [[inputs.net]]
+
+    [[inputs.system]]
+
+    [[inputs.kubernetes]]
+      url = "https://$HOSTIP:10250"
+      bearer_token = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      insecure_skip_verify = true
+
+    [[inputs.prometheus]]
+      urls = ["http://10.107.236.130:8080/metrics"]
+      metric_version = 2
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: telegraf
+  namespace: monitoring
+  labels:
+    app: telegraf
+spec:
+  selector:
+    matchLabels:
+      app: telegraf
+  template:
+    metadata:
+      labels:
+        app: telegraf
+    spec:
+      serviceAccountName: telegraf
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      hostNetwork: true
+      hostPID: true
+      containers:
+        - name: telegraf
+          image: telegraf:1.30
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HOSTIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: KUBE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: telegraf-token
+                  key: token
+          volumeMounts:
+            - name: config
+              mountPath: /etc/telegraf
+            - name: sys
+              mountPath: /rootfs/sys
+              readOnly: true
+            - name: proc
+              mountPath: /rootfs/proc
+              readOnly: true
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+              readOnly: true
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+      volumes:
+        - name: config
+          configMap:
+            name: telegraf-config
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock

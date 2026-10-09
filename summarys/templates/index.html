@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pipeline Summary</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        table { border-collapse: collapse; margin-bottom: 30px; }
+        td, th { border: 1px solid #ccc; padding: 6px 10px; }
+        th { background: #eee; }
+
+        .avg-table-wrap { margin: 24px 0; }
+        .avg-table-wrap h3 { margin-bottom: 8px; }
+        .avg-table { border-collapse: collapse; width: auto; }
+        .avg-table th {
+            background: #d0e8ff;
+            border: 1px solid #aac8ee;
+            padding: 7px 12px;
+            font-size: 13px;
+        }
+        .avg-table td {
+            border: 1px solid #c4d4e2;
+            padding: 6px 12px;
+            font-size: 13px;
+            text-align: right;
+        }
+        .avg-table td:first-child { text-align: left; font-weight: bold; }
+        .avg-table tr:nth-child(even) td { background: #f0f7ff; }
+        .avg-table tfoot td {
+            background: #dff0d8;
+            font-weight: bold;
+            border-top: 2px solid #8bbf7e;
+        }
+        .groups-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 1rem;
+        }
+        .group-block {
+          border: 0.5px solid var(--color-border-tertiary);
+          border-radius: var(--border-radius-lg);
+          padding: 12px;
+        }
+        .group-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Select history folders</h2>
+<p>
+  BASE_FOLDER: <strong>{{ base_folder }}</strong>
+  <a href="/settings/base-folder?query_name={{ query_name }}">change</a>
+</p>
+
+<form method="post">
+  <input type="text" name="query_name" value="{{ query_name }}" placeholder="q11" />
+
+  <div class="global-actions">
+    <button type="button" onclick="setAll(true)">check all</button>
+    <button type="button" onclick="setAll(false)">clear all</button>
+  </div>
+
+  <div class="groups-grid">
+    {% for group, items in grouped_folders.items() %}
+    <div class="group-block">
+      <div class="group-header">
+        <h3>{{ group }}</h3>
+        <div class="group-actions">
+          <button type="button" onclick="setGroup(this, true)">check</button>
+          <button type="button" onclick="setGroup(this, false)">clear</button>
+        </div>
+      </div>
+
+      {% for f in items %}
+      <label style="display: block">
+        <input type="checkbox" name="folders" value="{{ f }}"
+               {% if f in selected %}checked{% endif %}>
+        {{ f }}
+      </label>
+      {% endfor %}
+        <hr>
+         <p>Total: {{ items|length }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <button type="submit">Run</button>
+</form>
+
+<script>
+function setAll(checked) {
+  document.querySelectorAll('input[name="folders"]').forEach(cb => cb.checked = checked);
+}
+function setGroup(btn, checked) {
+  const block = btn.closest('.group-block');
+  block.querySelectorAll('input[name="folders"]').forEach(cb => cb.checked = checked);
+}
+</script>
+
+<hr>
+
+{% if global_summary %}
+
+<h2>Global Summary</h2>
+
+<table>
+<tr>
+    <th>File</th>
+    <th>Execution Time</th>
+    <th>Tasks Time</th>
+    <th>Total Tasks</th>
+    <th>Success</th>
+    <th>Failed</th>
+</tr>
+
+<tr style="font-weight:bold;">
+    <td style="width: 400px;">AVG</td>
+    <td>{{ global_summary.avg.execution }}</td>
+    <td>{{ global_summary.avg.tasks_time }}</td>
+    <td>{{ global_summary.avg.total_tasks }}</td>
+    <td>{{ global_summary.avg.success }}</td>
+    <td>{{ global_summary.avg.failed }}</td>
+</tr>
+
+<tr>
+    <td>MIN</td>
+    <td>
+        {{ global_summary.min.execution }}
+        ({{ "%+.3f"|format(global_summary.min.execution_delta) }})
+    </td>
+    <td>
+        {{ global_summary.min.tasks_time }}
+        ({{ "%+.3f"|format(global_summary.min.tasks_time_delta) }})
+    </td>
+    <td>{{ global_summary.min.total_tasks }}</td>
+    <td>{{ global_summary.min.success }}</td>
+    <td>{{ global_summary.min.failed }}</td>
+</tr>
+
+<tr>
+    <td>MAX</td>
+    <td>
+        {{ global_summary.max.execution }}
+        ({{ "%+.3f"|format(global_summary.max.execution_delta) }})
+    </td>
+    <td>
+        {{ global_summary.max.tasks_time }}
+        ({{ "%+.3f"|format(global_summary.max.tasks_time_delta) }})
+    </td>
+    <td>{{ global_summary.max.total_tasks }}</td>
+    <td>{{ global_summary.max.success }}</td>
+    <td>{{ global_summary.max.failed }}</td>
+</tr>
+
+</table>
+
+{% endif %}
+
+<hr>
+
+{% for r in results %}
+<h3>{{ r.folder }}</h3>
+
+<table>
+<tr>
+    <th style="width: 400px;">File</th>
+    <th>Execution Time</th>
+    <th>Tasks Time</th>
+    <th>File size (MB)</th>
+    <th>Total Tasks</th>
+    <th>Success</th>
+    <th>Failed</th>
+    <th>Log</th>
+</tr>
+
+{% for p in r.summary.pipelines %}
+<tr {% if 'bf.json' in p.file %} style="background-color:#d9d9d9;"{% endif %}>
+    <td>{{ p.file }}</td>
+    <td>{{ p.execution_time_s }}</td>
+    <td>{{ p.total_tasks_time_s }}</td>
+    <td>{{ p.output_size_mb }}</td>
+    <td>{{ p.total_task }}</td>
+    <td>{{ p.successful_task }}</td>
+    <td>{{ p.failed_task }}</td>
+    <td>
+        <a href="/log?query_name={{ query_name }}&folder={{ r.folder }}&file={{ p.file }}"
+           target="_blank">view</a>
+    </td>
+</tr>
+{% endfor %}
+
+<tr style="font-weight:bold; background:#f3f3f3;">
+    <td>SUM</td>
+    <td>{{ r.summary.total_execution_time_s }}</td>
+    <td>{{ r.summary.total_tasks_time_s }}</td>
+    <td>{{ r.summary.total_output_size_mb }}</td>
+    <td>{{ r.summary.total_tasks }}</td>
+    <td>{{ r.summary.total_successful_tasks }}</td>
+    <td>{{ r.summary.total_failed_tasks }}</td>
+    <td></td>
+</tr>
+
+</table>
+{% endfor %}
+
+<hr>
+
+{% if data %}
+{% for bucket in data %}
+
+<h3>Bucket: {{ bucket.bucket }}</h3>
+
+{% for cat in bucket.categories %}
+<h4>{{ cat.name }}</h4>
+
+<table>
+<tr>
+    <th>API</th>
+    <th>Before</th>
+    <th>After</th>
+    <th>Delta</th>
+</tr>
+
+{% for r in cat.rows %}
+<tr>
+    <td>{{ r.api }}</td>
+    <td>{{ "{:,}".format(r.before) }}</td>
+    <td>{{ "{:,}".format(r.after) }}</td>
+    <td>{{ "%+d"|format(r.delta) }}</td>
+</tr>
+{% endfor %}
+
+</table>
+{% endfor %}
+
+{% if bucket.totals %}
+<h4>Summary</h4>
+<table>
+<tr>
+    <th>Category</th>
+    <th>Total Delta</th>
+</tr>
+{% for k, v in bucket.totals.items() %}
+<tr>
+    <td>{{ k }}</td>
+    <td>{{ "%+d"|format(v) }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
+<hr>
+{% endfor %}
+{% endif %}
+
+</body>
+</html>
+
+<div id="toast" style="
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #323232;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 9999;
+">Copied!</div>
+
+<script>
+function copyToClipboard(btn) {
+    const text = btn.parentElement.querySelector('.time-range').innerText;
+    navigator.clipboard.writeText(text);
+
+    const toast = document.getElementById('toast');
+    toast.style.opacity = '1';
+    setTimeout(() => toast.style.opacity = '0', 2000);
+}
+</script>

@@ -1,0 +1,27 @@
+---
+# Kubernetes version
+k8s_version: "1.28"
+containerd_version: "1.7"
+
+# Network configuration
+pod_network_cidr: "10.244.0.0/16"
+service_cidr: "10.96.0.0/12"
+
+# CNI Plugin (flannel, calico, or cilium)
+cni_plugin: "flannel"
+
+# Flannel backend type
+# - host-gw: Best performance, requires nodes in same L2 network (recommended for same subnet)
+# - vxlan: Works across subnets, lower performance due to encapsulation overhead
+# - vxlan with DirectRouting: Hybrid mode (auto-switches between host-gw and vxlan)
+flannel_backend: "host-gw"
+
+# Control plane endpoint
+control_plane_endpoint: "10.158.1.10:6443"
+
+# Node configuration
+disable_swap: true
+enable_ipv4_forwarding: true
+
+# Container runtime
+container_runtime: "containerd"

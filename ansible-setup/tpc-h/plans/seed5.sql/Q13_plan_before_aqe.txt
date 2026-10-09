@@ -1,0 +1,11 @@
+Sort [custdist#4027L DESC NULLS LAST, c_count#4032L DESC NULLS LAST], true, 0
++- HashAggregate(keys=[c_count#4032L], functions=[count(1)], output=[c_count#4032L, custdist#4027L])
+   +- HashAggregate(keys=[c_count#4032L], functions=[partial_count(1)], output=[c_count#4032L, count#4036L])
+      +- HashAggregate(keys=[c_custkey#54L], functions=[count(o_orderkey#34L)], output=[c_count#4032L])
+         +- HashAggregate(keys=[c_custkey#54L], functions=[partial_count(o_orderkey#34L)], output=[c_custkey#54L, count#4038L])
+            +- Project [c_custkey#54L, o_orderkey#34L]
+               +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], LeftOuter
+                  :- FileScan parquet [c_custkey#54L] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<c_custkey:bigint>
+                  +- Project [o_orderkey#34L, o_custkey#35L]
+                     +- Filter ((isnotnull(o_comment#42) AND NOT o_comment#42 LIKE %unusual%packages%) AND isnotnull(o_custkey#35L))
+                        +- FileScan parquet [o_orderkey#34L,o_custkey#35L,o_comment#42] Batched: true, DataFilters: [isnotnull(o_comment#42), NOT o_comment#42 LIKE %unusual%packages%, isnotnull(o_custkey#35L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_comment), IsNotNull(o_custkey)], ReadSchema: struct<o_orderkey:bigint,o_custkey:bigint,o_comment:string>

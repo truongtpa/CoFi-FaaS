@@ -1,0 +1,16 @@
+TakeOrderedAndProject(limit=10, orderBy=[revenue#3716 DESC NULLS LAST,o_orderdate#38 ASC NULLS FIRST], output=[l_orderkey#0L,revenue#3716,o_orderdate#38,o_shippriority#41])
++- HashAggregate(keys=[l_orderkey#0L, o_orderdate#38, o_shippriority#41], functions=[sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[l_orderkey#0L, revenue#3716, o_orderdate#38, o_shippriority#41])
+   +- HashAggregate(keys=[l_orderkey#0L, o_orderdate#38, o_shippriority#41], functions=[partial_sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[l_orderkey#0L, o_orderdate#38, o_shippriority#41, sum#3724, isEmpty#3725])
+      +- Project [o_orderdate#38, o_shippriority#41, l_orderkey#0L, l_extendedprice#5, l_discount#6]
+         +- SortMergeJoin [o_orderkey#34L], [l_orderkey#0L], Inner
+            :- Project [o_orderkey#34L, o_orderdate#38, o_shippriority#41]
+            :  +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], Inner
+            :     :- Project [c_custkey#54L]
+            :     :  +- Filter ((isnotnull(c_mktsegment#60) AND (c_mktsegment#60 = MACHINERY)) AND isnotnull(c_custkey#54L))
+            :     :     +- FileScan parquet [c_custkey#54L,c_mktsegment#60] Batched: true, DataFilters: [isnotnull(c_mktsegment#60), (c_mktsegment#60 = MACHINERY), isnotnull(c_custkey#54L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_mktsegment), EqualTo(c_mktsegment,MACHINERY), IsNotNull(c_custkey)], ReadSchema: struct<c_custkey:bigint,c_mktsegment:string>
+            :     +- Project [o_orderkey#34L, o_custkey#35L, o_orderdate#38, o_shippriority#41]
+            :        +- Filter (((isnotnull(o_orderdate#38) AND (o_orderdate#38 < 1995-03-07)) AND isnotnull(o_custkey#35L)) AND isnotnull(o_orderkey#34L))
+            :           +- FileScan parquet [o_orderkey#34L,o_custkey#35L,o_orderdate#38,o_shippriority#41] Batched: true, DataFilters: [isnotnull(o_orderdate#38), (o_orderdate#38 < 1995-03-07), isnotnull(o_custkey#35L), isnotnull(o_..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_orderdate), LessThan(o_orderdate,1995-03-07), IsNotNull(o_custkey), IsNotNull(o_orde..., ReadSchema: struct<o_orderkey:bigint,o_custkey:bigint,o_orderdate:date,o_shippriority:int>
+            +- Project [l_orderkey#0L, l_extendedprice#5, l_discount#6]
+               +- Filter ((isnotnull(l_shipdate#10) AND (l_shipdate#10 > 1995-03-07)) AND isnotnull(l_orderkey#0L))
+                  +- FileScan parquet [l_orderkey#0L,l_extendedprice#5,l_discount#6,l_shipdate#10] Batched: true, DataFilters: [isnotnull(l_shipdate#10), (l_shipdate#10 > 1995-03-07), isnotnull(l_orderkey#0L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), GreaterThan(l_shipdate,1995-03-07), IsNotNull(l_orderkey)], ReadSchema: struct<l_orderkey:bigint,l_extendedprice:decimal(11,2),l_discount:decimal(11,2),l_shipdate:date>

@@ -1,0 +1,115 @@
+---
+- name: Install Docker, Docker Compose and Setup RAMdisk
+  hosts: all
+  become: yes
+  vars:
+    ramdisk_size: "80G"
+    ramdisk_mount: "/mnt/ramdisk"
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install dependencies
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Compose
+      ansible.builtin.get_url:
+        url: "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Install Docker Python SDK
+      ansible.builtin.apt:
+        name:
+          - python3-docker
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create RAMdisk mount point
+      ansible.builtin.file:
+        path: "{{ ramdisk_mount }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount RAMdisk
+      ansible.posix.mount:
+        path: "{{ ramdisk_mount }}"
+        src: tmpfs
+        fstype: tmpfs
+        opts: "size={{ ramdisk_size }},mode=1777"
+        state: mounted
+
+    - name: Create GlusterFS directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ ramdisk_mount }}/brick1"
+        - /opt/glusterfs
+
+    - name: Pull NFS server image
+      community.docker.docker_image:
+        name: itsthenetwork/nfs-server-alpine
+        tag: "12"
+        source: pull
+
+    - name: Start NFS container
+      community.docker.docker_container:
+        name: nfs
+        image: itsthenetwork/nfs-server-alpine:12
+        state: started
+        restart_policy: unless-stopped
+        privileged: yes
+        env:
+          SHARED_DIRECTORY: /data
+        volumes:
+          - "{{ ramdisk_mount }}:/data"
+        ports:
+          - "2049:2049"
+
+    - name: Display info
+      ansible.builtin.debug:
+        msg:
+          - "Installation complete!"
+          - ""
+          - "RAMdisk: {{ ramdisk_mount }} ({{ ramdisk_size }})"
+          - "NFS container is running"
+          - ""
+          - "Client to use NFS:"
+          - "  sudo apt install nfs-client -y"
+          - "  sudo mount -v -o vers=4,loud {{ ansible_default_ipv4.address }}:/ /mnt"
+          - "  df -h"

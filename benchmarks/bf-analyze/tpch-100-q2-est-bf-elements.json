@@ -1,0 +1,22 @@
+[
+  {
+    "task_name": "step1-region--combine",
+    "est_elements": 1
+  },
+  {
+    "task_name": "step2-nation--combine",
+    "est_elements": 10
+  },
+  {
+    "task_name": "step5-part--combine",
+    "est_elements": 88406
+  },
+  {
+    "task_name": "step3-join-region-nation--combine",
+    "est_elements": 6
+  },
+  {
+    "task_name": "step4-supplier--combine",
+    "est_elements": 222603
+  }
+]

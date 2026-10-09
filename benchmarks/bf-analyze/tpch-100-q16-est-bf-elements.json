@@ -1,0 +1,10 @@
+[
+  {
+    "task_name": "step2-supplier-clean--combine",
+    "est_elements": 10000
+  },
+  {
+    "task_name": "step1-part--combine",
+    "est_elements": 3302708
+  }
+]

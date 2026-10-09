@@ -1,0 +1,94 @@
+---
+- name: Install Node Exporter
+  hosts: all
+  become: yes
+
+  vars:
+    node_exporter_version: "1.0.1"
+    node_exporter_arch: "linux-amd64"
+    node_exporter_user: "node_exporter"
+
+  tasks:
+    - name: Create node_exporter user
+      user:
+        name: "{{ node_exporter_user }}"
+        shell: /bin/false
+        system: yes
+        create_home: no
+
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}.tar.gz"
+        mode: '0644'
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}.tar.gz"
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Copy binary to /usr/local/bin
+      copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}/node_exporter"
+        dest: /usr/local/bin/node_exporter
+        remote_src: yes
+        mode: '0755'
+        owner: "{{ node_exporter_user }}"
+        group: "{{ node_exporter_user }}"
+
+    - name: Create systemd service file
+      copy:
+        dest: /lib/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network-online.target
+          
+          [Service]
+          User={{ node_exporter_user }}
+          Group={{ node_exporter_user }}
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter
+          
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+      notify: restart node_exporter
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start Node Exporter
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+
+    - name: Wait for Node Exporter to start
+      wait_for:
+        port: 9100
+        delay: 2
+        timeout: 30
+
+    - name: Verify Node Exporter is responding
+      uri:
+        url: http://localhost:9100/metrics
+        return_content: yes
+      register: metrics_response
+      failed_when: "'node_' not in metrics_response.content"
+
+    - name: Clean up downloaded files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}.tar.gz"
+        - "/tmp/node_exporter-{{ node_exporter_version }}.{{ node_exporter_arch }}"
+
+  handlers:
+    - name: restart node_exporter
+      systemd:
+        name: node_exporter
+        state: restarted

@@ -1,0 +1,23 @@
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [cntrycode#3539 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(cntrycode#3539 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=78435]
+      +- HashAggregate(keys=[cntrycode#3539], functions=[count(1), sum(c_acctbal#59)], output=[cntrycode#3539, numcust#3542L, totacctbal#3543])
+         +- Exchange hashpartitioning(cntrycode#3539, 200), ENSURE_REQUIREMENTS, [plan_id=78432]
+            +- HashAggregate(keys=[cntrycode#3539], functions=[partial_count(1), partial_sum(c_acctbal#59)], output=[cntrycode#3539, count#3563L, sum#3564, isEmpty#3565])
+               +- Project [substring(c_phone#58, 1, 2) AS cntrycode#3539, c_acctbal#59]
+                  +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], LeftAnti
+                     :- Sort [c_custkey#54L ASC NULLS FIRST], false, 0
+                     :  +- Exchange hashpartitioning(c_custkey#54L, 200), ENSURE_REQUIREMENTS, [plan_id=78424]
+                     :     +- Filter ((isnotnull(c_acctbal#59) AND substring(c_phone#58, 1, 2) IN (31,42,43,40,30,22,25)) AND (cast(c_acctbal#59 as decimal(15,6)) > Subquery subquery#3540, [id=#78409]))
+                     :        :  +- Subquery subquery#3540, [id=#78409]
+                     :        :     +- AdaptiveSparkPlan isFinalPlan=false
+                     :        :        +- HashAggregate(keys=[], functions=[avg(UnscaledValue(c_acctbal#3552))], output=[avg(c_acctbal)#3546])
+                     :        :           +- Exchange SinglePartition, ENSURE_REQUIREMENTS, [plan_id=78407]
+                     :        :              +- HashAggregate(keys=[], functions=[partial_avg(UnscaledValue(c_acctbal#3552))], output=[sum#3588, count#3589L])
+                     :        :                 +- Project [c_acctbal#3552]
+                     :        :                    +- Filter ((isnotnull(c_acctbal#3552) AND (c_acctbal#3552 > 0.00)) AND substring(c_phone#3551, 1, 2) IN (31,42,43,40,30,22,25))
+                     :        :                       +- FileScan parquet [c_phone#3551,c_acctbal#3552] Batched: true, DataFilters: [isnotnull(c_acctbal#3552), (c_acctbal#3552 > 0.00), substring(c_phone#3551, 1, 2) IN (31,42,43,4..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_acctbal), GreaterThan(c_acctbal,0.00)], ReadSchema: struct<c_phone:string,c_acctbal:decimal(11,2)>
+                     :        +- FileScan parquet [c_custkey#54L,c_phone#58,c_acctbal#59] Batched: true, DataFilters: [isnotnull(c_acctbal#59), substring(c_phone#58, 1, 2) IN (31,42,43,40,30,22,25)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_acctbal)], ReadSchema: struct<c_custkey:bigint,c_phone:string,c_acctbal:decimal(11,2)>
+                     +- Sort [o_custkey#35L ASC NULLS FIRST], false, 0
+                        +- Exchange hashpartitioning(o_custkey#35L, 200), ENSURE_REQUIREMENTS, [plan_id=78425]
+                           +- FileScan parquet [o_custkey#35L] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<o_custkey:bigint>

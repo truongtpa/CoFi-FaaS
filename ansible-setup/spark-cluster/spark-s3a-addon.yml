@@ -1,0 +1,60 @@
+---
+- name: Add S3A support to existing Spark cluster
+  hosts: spark-master:spark-worker
+  become: yes
+  vars:
+    spark_home: /opt/spark
+    hadoop_aws_version: "3.3.4"
+    aws_sdk_version: "1.12.262"
+
+  tasks:
+    - name: Ensure Spark jars directory exists
+      file:
+        path: "{{ spark_home }}/jars"
+        state: directory
+        mode: '0755'
+
+    - name: Download hadoop-aws jar
+      get_url:
+        url: "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/{{ hadoop_aws_version }}/hadoop-aws-{{ hadoop_aws_version }}.jar"
+        dest: "{{ spark_home }}/jars/hadoop-aws-{{ hadoop_aws_version }}.jar"
+        mode: '0644'
+        timeout: 300
+
+    - name: Download aws-java-sdk-bundle jar
+      get_url:
+        url: "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/{{ aws_sdk_version }}/aws-java-sdk-bundle-{{ aws_sdk_version }}.jar"
+        dest: "{{ spark_home }}/jars/aws-java-sdk-bundle-{{ aws_sdk_version }}.jar"
+        mode: '0644'
+        timeout: 300
+
+    - name: Backup spark-defaults.conf if exists
+      copy:
+        src: "{{ spark_home }}/conf/spark-defaults.conf"
+        dest: "{{ spark_home }}/conf/spark-defaults.conf.bak"
+        remote_src: yes
+      ignore_errors: yes
+
+    - name: Add S3A and performance config to spark-defaults.conf
+      blockinfile:
+        path: "{{ spark_home }}/conf/spark-defaults.conf"
+        create: yes
+        marker: "# {mark} ANSIBLE S3A ADDON"
+        block: |
+          # ===== S3A Configuration =====
+          spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+          spark.hadoop.fs.s3a.endpoint=http://10.158.3.227:9000
+          spark.hadoop.fs.s3a.path.style.access=true
+          spark.hadoop.fs.s3a.connection.ssl.enabled=false
+          spark.hadoop.fs.s3a.fast.upload=true
+          spark.hadoop.fs.s3a.connection.maximum=100
+
+          # ===== Credentials =====
+          spark.hadoop.fs.s3a.access.key=admin
+          spark.hadoop.fs.s3a.secret.key=lannion-enssat
+
+          # ===== Performance =====
+          spark.sql.adaptive.enabled=true
+          spark.sql.shuffle.partitions=200
+          spark.sql.autoBroadcastJoinThreshold=104857600
+          spark.sql.files.maxPartitionBytes=134217728

@@ -1,0 +1,93 @@
+---
+- name: Remove old containerd packages if exists
+  apt:
+    name:
+      - containerd
+      - containerd.io
+    state: absent
+  ignore_errors: yes
+
+- name: Add Docker apt key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    keyring: /etc/apt/keyrings/docker.gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    filename: docker
+    state: present
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install containerd.io
+  apt:
+    name: containerd.io
+    state: present
+
+- name: Stop containerd to reconfigure
+  systemd:
+    name: containerd
+    state: stopped
+
+- name: Remove old containerd config
+  file:
+    path: /etc/containerd/config.toml
+    state: absent
+
+- name: Create containerd config directory
+  file:
+    path: /etc/containerd
+    state: directory
+    mode: '0755'
+
+- name: Generate default containerd configuration
+  shell: containerd config default > /etc/containerd/config.toml
+  args:
+    creates: /etc/containerd/config.toml
+
+- name: Configure containerd to use systemd cgroup driver
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Set correct sandbox image for Kubernetes
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'sandbox_image = ".*"'
+    replace: 'sandbox_image = "registry.k8s.io/pause:3.9"'
+
+- name: Ensure CRI plugin is not disabled
+  lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '^\s*disabled_plugins\s*='
+    state: absent
+
+- name: Restart containerd with new config
+  systemd:
+    name: containerd
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for containerd socket to be ready
+  wait_for:
+    path: /run/containerd/containerd.sock
+    state: present
+    timeout: 60
+
+- name: Verify containerd CRI is working
+  command: crictl version
+  register: crictl_check
+  changed_when: false
+  retries: 3
+  delay: 5
+  until: crictl_check.rc == 0
+
+- name: Display containerd/CRI version
+  debug:
+    var: crictl_check.stdout_lines

@@ -1,0 +1,51 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: bloomfaas-operation
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "30"
+        autoscaling.knative.dev/max-scale: "70"
+        autoscaling.knative.dev/scale-down-delay: "10m"
+    spec:
+      containerConcurrency: 1
+      idleTimeoutSeconds: 300
+      timeoutSeconds: 300
+      responseStartTimeoutSeconds: 60
+      containers:
+        - image: 10.158.1.10:32000/bloomfaas-operation:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MINIO_ENDPOINT
+              value: "10.158.1.100:9000"
+            - name: ACCESS_KEY
+              value: "admin"
+            - name: SECRET_KEY
+              value: "lannion-enssat"
+            - name: DEBUG
+              value: "True"
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: nfs-storage
+              mountPath: /mnt
+
+      volumes:
+        - name: nfs-storage
+          persistentVolumeClaim:
+            claimName: nfs-pvc

@@ -1,0 +1,66 @@
+---
+- name: Configure containerd registry auth
+  hosts: all
+  become: true
+  vars:
+    docker_user: ""
+    docker_token: ""
+  tasks:
+    - name: Create auth directory
+      file:
+        path: /root/.docker
+        state: directory
+        mode: '0700'
+
+    - name: Write docker config.json
+      copy:
+        dest: /root/.docker/config.json
+        mode: '0600'
+        content: |
+          {
+            "auths": {
+              "https://index.docker.io/v1/": {
+                "auth": "{{ (docker_user + ':' + docker_token) | b64encode }}"
+              }
+            }
+          }
+
+    - name: Configure containerd registry auth
+      blockinfile:
+        path: /etc/containerd/config.toml
+        marker: "# {mark} DOCKER.IO AUTH"
+        block: |
+          [plugins."io.containerd.grpc.v1.cri".registry.configs."registry-1.docker.io".auth]
+            username = "{{ docker_user }}"
+            password = "{{ docker_token }}"
+
+    - name: Restart containerd
+      systemd:
+        name: containerd
+        state: restarted
+
+- name: Create imagePullSecret
+  hosts: k8s-master
+  become: true
+  vars:
+    docker_user: ""
+    docker_token: ""
+    namespaces:
+      - default
+      - kubernetes-dashboard
+      - knative-serving
+  tasks:
+    - name: Create regcred secret
+      shell: |
+        kubectl create secret docker-registry regcred \
+          --docker-server=https://index.docker.io/v1/ \
+          --docker-username="{{ docker_user }}" \
+          --docker-password="{{ docker_token }}" \
+          -n {{ item }} --dry-run=client -o yaml | kubectl apply -f -
+      loop: "{{ namespaces }}"
+
+    - name: Patch default ServiceAccount
+      shell: |
+        kubectl patch serviceaccount default -n {{ item }} \
+          -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+      loop: "{{ namespaces }}"

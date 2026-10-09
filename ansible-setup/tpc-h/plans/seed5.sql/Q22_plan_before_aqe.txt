@@ -1,0 +1,13 @@
+Sort [cntrycode#4403 ASC NULLS FIRST], true, 0
++- HashAggregate(keys=[cntrycode#4403], functions=[count(1), sum(c_acctbal#59)], output=[cntrycode#4403, numcust#4406L, totacctbal#4407])
+   +- HashAggregate(keys=[cntrycode#4403], functions=[partial_count(1), partial_sum(c_acctbal#59)], output=[cntrycode#4403, count#4427L, sum#4428, isEmpty#4429])
+      +- Project [substring(c_phone#58, 1, 2) AS cntrycode#4403, c_acctbal#59]
+         +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], LeftAnti
+            :- Project [c_custkey#54L, c_phone#58, c_acctbal#59]
+            :  +- Filter ((isnotnull(c_acctbal#59) AND substring(c_phone#58, 1, 2) IN (29,34,25,31,40,28,26)) AND (cast(c_acctbal#59 as decimal(15,6)) > scalar-subquery#4404 []))
+            :     :  +- Aggregate [cast((avg(UnscaledValue(c_acctbal#4416)) / 100.0) as decimal(15,6)) AS avg(c_acctbal)#4410]
+            :     :     +- Project [c_acctbal#4416]
+            :     :        +- Filter (isnotnull(c_acctbal#4416) AND ((c_acctbal#4416 > 0.00) AND substring(c_phone#4415, 1, 2) IN (29,34,25,31,40,28,26)))
+            :     :           +- Relation [c_custkey#4411L,c_name#4412,c_address#4413,c_nationkey#4414L,c_phone#4415,c_acctbal#4416,c_mktsegment#4417,c_comment#4418,ignore#4419] parquet
+            :     +- FileScan parquet [c_custkey#54L,c_phone#58,c_acctbal#59] Batched: true, DataFilters: [isnotnull(c_acctbal#59), substring(c_phone#58, 1, 2) IN (29,34,25,31,40,28,26)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_acctbal)], ReadSchema: struct<c_custkey:bigint,c_phone:string,c_acctbal:decimal(11,2)>
+            +- FileScan parquet [o_custkey#35L] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<o_custkey:bigint>

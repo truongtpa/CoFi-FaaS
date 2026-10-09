@@ -1,0 +1,41 @@
+---
+- name: Manage Spark Cluster
+  hosts: spark-master
+  become: yes
+  become_user: spark
+
+  vars_prompt:
+    - name: cluster_action
+      prompt: "Enter action (start/stop/restart/status)"
+      private: no
+      default: "status"
+
+  tasks:
+    - name: Start Spark Cluster
+      shell: |
+        cd {{ spark_home }}
+        sbin/start-all.sh
+      when: cluster_action == "start"
+
+    - name: Stop Spark Cluster
+      shell: |
+        cd {{ spark_home }}
+        sbin/stop-all.sh
+      when: cluster_action == "stop"
+
+    - name: Restart Spark Cluster
+      shell: |
+        cd {{ spark_home }}
+        sbin/stop-all.sh
+        sleep 3
+        sbin/start-all.sh
+      when: cluster_action == "restart"
+
+    - name: Check Cluster Status
+      shell: jps
+      register: cluster_status
+      changed_when: false
+
+    - name: Display Status
+      debug:
+        msg: "{{ cluster_status.stdout_lines }}"

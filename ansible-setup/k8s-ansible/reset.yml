@@ -1,0 +1,65 @@
+---
+- name: Reset Kubernetes cluster
+  hosts: k8s_cluster
+  become: true
+  tasks:
+    - name: Reset kubeadm
+      command: kubeadm reset -f
+      ignore_errors: yes
+
+    - name: Remove CNI configuration
+      file:
+        path: /etc/cni/net.d
+        state: absent
+
+    - name: Remove kubelet data
+      file:
+        path: /var/lib/kubelet
+        state: absent
+
+    - name: Remove Kubernetes config
+      file:
+        path: /etc/kubernetes
+        state: absent
+
+    - name: Remove kube config from user home
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: absent
+      when: ansible_user != 'root'
+
+    - name: Remove kube config from root
+      file:
+        path: /root/.kube
+        state: absent
+
+    - name: Flush iptables
+      shell: |
+        iptables -F
+        iptables -t nat -F
+        iptables -t mangle -F
+        iptables -X
+      ignore_errors: yes
+
+    - name: Remove join command
+      file:
+        path: /tmp/k8s_join_command.sh
+        state: absent
+
+    - name: Restart containerd
+      systemd:
+        name: containerd
+        state: restarted
+
+    - name: Clean up crictl
+      shell: crictl rm $(crictl ps -aq) || true
+      ignore_errors: yes
+
+    - name: Remove all pods
+      shell: crictl rmp $(crictl pods -q) || true
+      ignore_errors: yes
+
+    - name: Reboot nodes (optional)
+      reboot:
+        reboot_timeout: 300
+      when: reboot_after_reset | default(false)

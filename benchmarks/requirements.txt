@@ -1,0 +1,8 @@
+flask
+sentry_sdk
+duckdb
+pyarrow
+fastbloom_rs
+numpy
+paramiko
+sqlglot

@@ -1,0 +1,11 @@
+Sort [o_orderpriority#39 ASC NULLS FIRST], true, 0
++- HashAggregate(keys=[o_orderpriority#39], functions=[count(1)], output=[o_orderpriority#39, order_count#1147L])
+   +- HashAggregate(keys=[o_orderpriority#39], functions=[partial_count(1)], output=[o_orderpriority#39, count#1153L])
+      +- Project [o_orderpriority#39]
+         +- SortMergeJoin [o_orderkey#34L], [l_orderkey#0L], LeftSemi
+            :- Project [o_orderkey#34L, o_orderpriority#39]
+            :  +- Filter ((isnotnull(o_orderdate#38) AND (o_orderdate#38 >= 1994-02-01)) AND (o_orderdate#38 < 1994-05-01))
+            :     +- FileScan parquet [o_orderkey#34L,o_orderdate#38,o_orderpriority#39] Batched: true, DataFilters: [isnotnull(o_orderdate#38), (o_orderdate#38 >= 1994-02-01), (o_orderdate#38 < 1994-05-01)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_orderdate), GreaterThanOrEqual(o_orderdate,1994-02-01), LessThan(o_orderdate,1994-05..., ReadSchema: struct<o_orderkey:bigint,o_orderdate:date,o_orderpriority:string>
+            +- Project [l_orderkey#0L]
+               +- Filter ((isnotnull(l_commitdate#11) AND isnotnull(l_receiptdate#12)) AND (l_commitdate#11 < l_receiptdate#12))
+                  +- FileScan parquet [l_orderkey#0L,l_commitdate#11,l_receiptdate#12] Batched: true, DataFilters: [isnotnull(l_commitdate#11), isnotnull(l_receiptdate#12), (l_commitdate#11 < l_receiptdate#12)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_commitdate), IsNotNull(l_receiptdate)], ReadSchema: struct<l_orderkey:bigint,l_commitdate:date,l_receiptdate:date>

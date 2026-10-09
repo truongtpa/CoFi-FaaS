@@ -1,0 +1,5 @@
+HashAggregate(keys=[], functions=[sum((l_extendedprice#5 * l_discount#6))], output=[revenue#2054])
++- HashAggregate(keys=[], functions=[partial_sum((l_extendedprice#5 * l_discount#6))], output=[sum#2059, isEmpty#2060])
+   +- Project [l_extendedprice#5, l_discount#6]
+      +- Filter (((((((isnotnull(l_shipdate#10) AND isnotnull(l_discount#6)) AND isnotnull(l_quantity#4)) AND (l_shipdate#10 >= 1994-01-01)) AND (l_shipdate#10 < 1995-01-01)) AND (l_discount#6 >= 0.07)) AND (l_discount#6 <= 0.09)) AND (l_quantity#4 < 24.00))
+         +- FileScan parquet [l_quantity#4,l_extendedprice#5,l_discount#6,l_shipdate#10] Batched: true, DataFilters: [isnotnull(l_shipdate#10), isnotnull(l_discount#6), isnotnull(l_quantity#4), (l_shipdate#10 >= 19..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), IsNotNull(l_discount), IsNotNull(l_quantity), GreaterThanOrEqual(l_shipda..., ReadSchema: struct<l_quantity:decimal(11,2),l_extendedprice:decimal(11,2),l_discount:decimal(11,2),l_shipdate...

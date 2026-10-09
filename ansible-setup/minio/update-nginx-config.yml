@@ -1,0 +1,29 @@
+---
+- name: Update Nginx config
+  hosts: minio
+  become: yes
+
+  tasks:
+    - name: Copy nginx.conf to remote host
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/nginx-config/nginx-v2.conf"
+        dest: "{{ ansible_env.HOME }}/nginx/nginx.conf"
+        mode: "0644"
+
+    - name: Remove existing nginx container
+      community.docker.docker_container:
+        name: nginx-proxy
+        state: absent
+
+    - name: Run Nginx container
+      community.docker.docker_container:
+        name: nginx-proxy
+        image: nginx:latest
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8000:8000"
+        etc_hosts:
+          host.docker.internal: host-gateway
+        volumes:
+          - "{{ ansible_env.HOME }}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"

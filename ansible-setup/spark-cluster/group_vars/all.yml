@@ -1,0 +1,25 @@
+---
+# Java version
+java_version: "11"
+
+# Spark configuration
+spark_version: "3.5.0"
+hadoop_version: "3"
+spark_download_url: "https://archive.apache.org/dist/spark/spark-{{ spark_version }}/spark-{{ spark_version }}-bin-hadoop{{ hadoop_version }}.tgz"
+spark_home: "/opt/spark"
+spark_user: "root"
+spark_group: "root"
+
+# Master configuration
+spark_master_host: "{{ hostvars[groups['spark-master'][0]]['ansible_host'] }}"
+spark_master_port: 7077
+spark_master_webui_port: 8080
+
+# Worker configuration
+spark_worker_cores: 4
+spark_worker_memory: "4g"
+spark_worker_webui_port: 8081
+
+# Network configuration
+spark_local_dirs: "/tmp/spark"
+spark_log_dir: "/var/log/spark"

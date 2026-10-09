@@ -1,0 +1,27 @@
+---
+- name: Install Docker and Docker Compose
+  hosts: sidekick
+  become: yes
+
+  tasks:
+    - name: Remove existing Sidekick container
+      community.docker.docker_container:
+        name: sidekick
+        state: absent
+
+    - name: Run MinIO Sidekick load balancer
+      community.docker.docker_container:
+        name: sidekick
+        image: quay.io/minio/sidekick:v7.0.0
+        state: started
+        detach: true
+        restart_policy: always
+        ports:
+          - "8080:8080"
+        command: >
+          --address :8080
+          --health-path /minio/health/ready
+          --health-duration 5s
+          --host-balance least
+          --log
+          http://10.158.1.22:9000,http://10.158.1.23:9000

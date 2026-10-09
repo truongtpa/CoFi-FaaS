@@ -1,0 +1,18 @@
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [custdist#1435L DESC NULLS LAST, c_count#1440L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(custdist#1435L DESC NULLS LAST, c_count#1440L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=32785]
+      +- HashAggregate(keys=[c_count#1440L], functions=[count(1)], output=[c_count#1440L, custdist#1435L])
+         +- Exchange hashpartitioning(c_count#1440L, 200), ENSURE_REQUIREMENTS, [plan_id=32782]
+            +- HashAggregate(keys=[c_count#1440L], functions=[partial_count(1)], output=[c_count#1440L, count#1444L])
+               +- HashAggregate(keys=[c_custkey#54L], functions=[count(o_orderkey#34L)], output=[c_count#1440L])
+                  +- HashAggregate(keys=[c_custkey#54L], functions=[partial_count(o_orderkey#34L)], output=[c_custkey#54L, count#1446L])
+                     +- Project [c_custkey#54L, o_orderkey#34L]
+                        +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], LeftOuter
+                           :- Sort [c_custkey#54L ASC NULLS FIRST], false, 0
+                           :  +- Exchange hashpartitioning(c_custkey#54L, 200), ENSURE_REQUIREMENTS, [plan_id=32772]
+                           :     +- FileScan parquet [c_custkey#54L] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<c_custkey:bigint>
+                           +- Sort [o_custkey#35L ASC NULLS FIRST], false, 0
+                              +- Exchange hashpartitioning(o_custkey#35L, 200), ENSURE_REQUIREMENTS, [plan_id=32773]
+                                 +- Project [o_orderkey#34L, o_custkey#35L]
+                                    +- Filter ((isnotnull(o_comment#42) AND NOT o_comment#42 LIKE %special%requests%) AND isnotnull(o_custkey#35L))
+                                       +- FileScan parquet [o_orderkey#34L,o_custkey#35L,o_comment#42] Batched: true, DataFilters: [isnotnull(o_comment#42), NOT o_comment#42 LIKE %special%requests%, isnotnull(o_custkey#35L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_comment), IsNotNull(o_custkey)], ReadSchema: struct<o_orderkey:bigint,o_custkey:bigint,o_comment:string>

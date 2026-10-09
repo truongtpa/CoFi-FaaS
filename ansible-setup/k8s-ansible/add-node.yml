@@ -1,0 +1,111 @@
+---
+# add-nodes.yml
+# Add new worker nodes to an existing Kubernetes cluster.
+#
+# Usage:
+#   ansible-playbook add-nodes.yml -i inventory.ini -e "new_nodes=k8s-worker6,k8s-worker7"
+#
+# Or define [new_workers] group in inventory.ini and run:
+#   ansible-playbook add-nodes.yml
+#
+# The playbook assumes:
+#   - The control plane is already running at control_plane_endpoint
+#   - New nodes are reachable via SSH with the credentials in ansible.cfg
+#   - Variables in group_vars/all.yml are correct (k8s_version, etc.)
+
+- name: Prepare new worker nodes
+  hosts: new-workers
+  become: true
+  roles:
+    - common
+    - container-runtime
+
+- name: Generate a fresh join token on the control plane
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Create new join token (valid 2h)
+      command: kubeadm token create --print-join-command --ttl 2h
+      register: join_command
+      changed_when: false
+
+    - name: Save join command to file
+      copy:
+        content: |
+          #!/bin/bash
+          {{ join_command.stdout }}
+        dest: /tmp/k8s_join_command.sh
+        mode: '0755'
+
+    - name: Fetch join command to Ansible controller
+      fetch:
+        src: /tmp/k8s_join_command.sh
+        dest: /tmp/k8s_join_command.sh
+        flat: yes
+
+    - name: Remove join command from control plane
+      file:
+        path: /tmp/k8s_join_command.sh
+        state: absent
+
+- name: Join new worker nodes to the cluster
+  hosts: new-workers
+  become: true
+  tasks:
+    - name: Check if node is already joined
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: node_joined
+
+    - name: Copy join command to new node
+      copy:
+        src: /tmp/k8s_join_command.sh
+        dest: /tmp/k8s_join_command.sh
+        mode: '0755'
+      when: not node_joined.stat.exists
+
+    - name: Join node to cluster
+      shell: bash /tmp/k8s_join_command.sh
+      when: not node_joined.stat.exists
+      register: join_result
+
+    - name: Display join result
+      debug:
+        var: join_result.stdout_lines
+      when: not node_joined.stat.exists
+
+    - name: Remove join command from node
+      file:
+        path: /tmp/k8s_join_command.sh
+        state: absent
+
+    - name: Wait for node to register
+      pause:
+        seconds: 20
+      when: not node_joined.stat.exists
+
+- name: Verify new nodes are Ready
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Wait for all nodes to be Ready
+      shell: |
+        kubectl get nodes --no-headers | grep -v ' Ready' | grep -v 'control-plane' | wc -l
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: not_ready_count
+      until: not_ready_count.stdout == "0"
+      retries: 20
+      delay: 15
+      changed_when: false
+
+    - name: Show cluster node status
+      shell: kubectl get nodes -o wide
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: node_status
+      changed_when: false
+
+    - name: Display node status
+      debug:
+        var: node_status.stdout_lines

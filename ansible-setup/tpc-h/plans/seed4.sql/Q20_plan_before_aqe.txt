@@ -1,0 +1,34 @@
+Sort [s_name#105 ASC NULLS FIRST], true, 0
++- Project [s_name#105, s_address#106]
+   +- BroadcastHashJoin [s_nationkey#107L], [n_nationkey#120L], Inner, BuildRight, false
+      :- Project [s_name#105, s_address#106, s_nationkey#107L]
+      :  +- SortMergeJoin [s_suppkey#104L], [ps_suppkey#93L], LeftSemi
+      :     :- Project [s_suppkey#104L, s_name#105, s_address#106, s_nationkey#107L]
+      :     :  +- Filter (isnotnull(s_nationkey#107L) AND might_contain(scalar-subquery#3435 [], xxhash64(s_nationkey#107L, 42)))
+      :     :     :  +- Aggregate [bloom_filter_agg(xxhash64(n_nationkey#120L, 42), 1000000, 8388608, 0, 0) AS bloomFilter#3434]
+      :     :     :     +- Project [n_nationkey#120L]
+      :     :     :        +- Filter ((isnotnull(n_name#121) AND (n_name#121 = IRAQ)) AND isnotnull(n_nationkey#120L))
+      :     :     :           +- Relation [n_nationkey#120L,n_name#121,n_regionkey#122L,n_comment#123] parquet
+      :     :     +- FileScan parquet [s_suppkey#104L,s_name#105,s_address#106,s_nationkey#107L] Batched: true, DataFilters: [isnotnull(s_nationkey#107L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/supplier.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(s_nationkey)], ReadSchema: struct<s_suppkey:bigint,s_name:string,s_address:string,s_nationkey:bigint>
+      :     +- Project [ps_suppkey#93L]
+      :        +- SortMergeJoin [ps_partkey#92L, ps_suppkey#93L], [l_partkey#1L, l_suppkey#2L], Inner, (cast(ps_availqty#94 as decimal(23,3)) > (0.5 * sum(l_quantity))#3430)
+      :           :- SortMergeJoin [ps_partkey#92L], [p_partkey#72L], LeftSemi
+      :           :  :- Project [ps_partkey#92L, ps_suppkey#93L, ps_availqty#94]
+      :           :  :  +- Filter ((isnotnull(ps_availqty#94) AND isnotnull(ps_partkey#92L)) AND isnotnull(ps_suppkey#93L))
+      :           :  :     +- FileScan parquet [ps_partkey#92L,ps_suppkey#93L,ps_availqty#94] Batched: true, DataFilters: [isnotnull(ps_availqty#94), isnotnull(ps_partkey#92L), isnotnull(ps_suppkey#93L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/partsupp.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(ps_availqty), IsNotNull(ps_partkey), IsNotNull(ps_suppkey)], ReadSchema: struct<ps_partkey:bigint,ps_suppkey:bigint,ps_availqty:int>
+      :           :  +- Project [p_partkey#72L]
+      :           :     +- Filter (isnotnull(p_name#73) AND StartsWith(p_name#73, wheat))
+      :           :        +- FileScan parquet [p_partkey#72L,p_name#73] Batched: true, DataFilters: [isnotnull(p_name#73), StartsWith(p_name#73, wheat)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/part.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(p_name), StringStartsWith(p_name,wheat)], ReadSchema: struct<p_partkey:bigint,p_name:string>
+      :           +- Filter isnotnull((0.5 * sum(l_quantity))#3430)
+      :              +- HashAggregate(keys=[l_partkey#1L, l_suppkey#2L], functions=[sum(l_quantity#4)], output=[(0.5 * sum(l_quantity))#3430, l_partkey#1L, l_suppkey#2L])
+      :                 +- HashAggregate(keys=[l_partkey#1L, l_suppkey#2L], functions=[partial_sum(l_quantity#4)], output=[l_partkey#1L, l_suppkey#2L, sum#3438, isEmpty#3439])
+      :                    +- SortMergeJoin [l_partkey#1L], [p_partkey#72L], LeftSemi
+      :                       :- Project [l_partkey#1L, l_suppkey#2L, l_quantity#4]
+      :                       :  +- Filter ((((isnotnull(l_shipdate#10) AND (l_shipdate#10 >= 1995-01-01)) AND (l_shipdate#10 < 1996-01-01)) AND isnotnull(l_partkey#1L)) AND isnotnull(l_suppkey#2L))
+      :                       :     +- FileScan parquet [l_partkey#1L,l_suppkey#2L,l_quantity#4,l_shipdate#10] Batched: true, DataFilters: [isnotnull(l_shipdate#10), (l_shipdate#10 >= 1995-01-01), (l_shipdate#10 < 1996-01-01), isnotnull..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), GreaterThanOrEqual(l_shipdate,1995-01-01), LessThan(l_shipdate,1996-01-01..., ReadSchema: struct<l_partkey:bigint,l_suppkey:bigint,l_quantity:decimal(11,2),l_shipdate:date>
+      :                       +- Project [p_partkey#72L]
+      :                          +- Filter (isnotnull(p_name#73) AND StartsWith(p_name#73, wheat))
+      :                             +- FileScan parquet [p_partkey#72L,p_name#73] Batched: true, DataFilters: [isnotnull(p_name#73), StartsWith(p_name#73, wheat)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/part.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(p_name), StringStartsWith(p_name,wheat)], ReadSchema: struct<p_partkey:bigint,p_name:string>
+      +- Project [n_nationkey#120L]
+         +- Filter ((isnotnull(n_name#121) AND (n_name#121 = IRAQ)) AND isnotnull(n_nationkey#120L))
+            +- FileScan parquet [n_nationkey#120L,n_name#121] Batched: true, DataFilters: [isnotnull(n_name#121), (n_name#121 = IRAQ), isnotnull(n_nationkey#120L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/nation.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(n_name), EqualTo(n_name,IRAQ), IsNotNull(n_nationkey)], ReadSchema: struct<n_nationkey:bigint,n_name:string>

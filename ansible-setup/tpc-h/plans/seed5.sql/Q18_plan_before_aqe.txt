@@ -1,0 +1,28 @@
+TakeOrderedAndProject(limit=100, orderBy=[o_totalprice#37 DESC NULLS LAST,o_orderdate#38 ASC NULLS FIRST], output=[c_name#55,c_custkey#54L,o_orderkey#34L,o_orderdate#38,o_totalprice#37,sum(l_quantity)#4239])
++- HashAggregate(keys=[c_name#55, c_custkey#54L, o_orderkey#34L, o_orderdate#38, o_totalprice#37], functions=[sum(l_quantity#4)], output=[c_name#55, c_custkey#54L, o_orderkey#34L, o_orderdate#38, o_totalprice#37, sum(l_quantity)#4239])
+   +- HashAggregate(keys=[c_name#55, c_custkey#54L, o_orderkey#34L, o_orderdate#38, o_totalprice#37], functions=[partial_sum(l_quantity#4)], output=[c_name#55, c_custkey#54L, o_orderkey#34L, o_orderdate#38, o_totalprice#37, sum#4248, isEmpty#4249])
+      +- Project [c_custkey#54L, c_name#55, o_orderkey#34L, o_totalprice#37, o_orderdate#38, l_quantity#4]
+         +- SortMergeJoin [o_orderkey#34L], [l_orderkey#0L], Inner
+            :- Project [c_custkey#54L, c_name#55, o_orderkey#34L, o_totalprice#37, o_orderdate#38]
+            :  +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], Inner
+            :     :- Project [c_custkey#54L, c_name#55]
+            :     :  +- Filter isnotnull(c_custkey#54L)
+            :     :     +- FileScan parquet [c_custkey#54L,c_name#55] Batched: true, DataFilters: [isnotnull(c_custkey#54L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_custkey)], ReadSchema: struct<c_custkey:bigint,c_name:string>
+            :     +- SortMergeJoin [o_orderkey#34L], [l_orderkey#4221L], LeftSemi
+            :        :- Project [o_orderkey#34L, o_custkey#35L, o_totalprice#37, o_orderdate#38]
+            :        :  +- Filter (isnotnull(o_custkey#35L) AND isnotnull(o_orderkey#34L))
+            :        :     +- FileScan parquet [o_orderkey#34L,o_custkey#35L,o_totalprice#37,o_orderdate#38] Batched: true, DataFilters: [isnotnull(o_custkey#35L), isnotnull(o_orderkey#34L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_custkey), IsNotNull(o_orderkey)], ReadSchema: struct<o_orderkey:bigint,o_custkey:bigint,o_totalprice:decimal(11,2),o_orderdate:date>
+            :        +- Project [l_orderkey#4221L]
+            :           +- Filter (isnotnull(sum(l_quantity#4)#4220) AND (sum(l_quantity#4)#4220 > 313.00))
+            :              +- HashAggregate(keys=[l_orderkey#4221L], functions=[sum(l_quantity#4225)], output=[l_orderkey#4221L, sum(l_quantity#4)#4220])
+            :                 +- HashAggregate(keys=[l_orderkey#4221L], functions=[partial_sum(l_quantity#4225)], output=[l_orderkey#4221L, sum#4252, isEmpty#4253])
+            :                    +- FileScan parquet [l_orderkey#4221L,l_quantity#4225] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<l_orderkey:bigint,l_quantity:decimal(11,2)>
+            +- SortMergeJoin [l_orderkey#0L], [l_orderkey#4221L], LeftSemi
+               :- Project [l_orderkey#0L, l_quantity#4]
+               :  +- Filter isnotnull(l_orderkey#0L)
+               :     +- FileScan parquet [l_orderkey#0L,l_quantity#4] Batched: true, DataFilters: [isnotnull(l_orderkey#0L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_orderkey)], ReadSchema: struct<l_orderkey:bigint,l_quantity:decimal(11,2)>
+               +- Project [l_orderkey#4221L]
+                  +- Filter (isnotnull(sum(l_quantity#4)#4220) AND (sum(l_quantity#4)#4220 > 313.00))
+                     +- HashAggregate(keys=[l_orderkey#4221L], functions=[sum(l_quantity#4225)], output=[l_orderkey#4221L, sum(l_quantity#4)#4220])
+                        +- HashAggregate(keys=[l_orderkey#4221L], functions=[partial_sum(l_quantity#4225)], output=[l_orderkey#4221L, sum#4252, isEmpty#4253])
+                           +- FileScan parquet [l_orderkey#4221L,l_quantity#4225] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<l_orderkey:bigint,l_quantity:decimal(11,2)>

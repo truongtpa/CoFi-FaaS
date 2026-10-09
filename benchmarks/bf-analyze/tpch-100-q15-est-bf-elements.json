@@ -1,0 +1,22 @@
+[
+  {
+    "task_name": "step1-lineitem--combine",
+    "est_elements": 1055038
+  },
+  {
+    "task_name": "step1-lineitem--combine",
+    "est_elements": 1102728
+  },
+  {
+    "task_name": "step1-lineitem--combine",
+    "est_elements": 1102810
+  },
+  {
+    "task_name": "step1-lineitem--combine",
+    "est_elements": 1102775
+  },
+  {
+    "task_name": "step1-lineitem--combine",
+    "est_elements": 1102410
+  }
+]

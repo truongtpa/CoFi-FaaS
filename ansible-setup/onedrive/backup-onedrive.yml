@@ -1,0 +1,46 @@
+---
+- name: Backup lên OneDrive cá nhân
+  hosts: all
+  become: yes
+  vars:
+    backup_src: /root/CoFi-FaaS-8-Oct.zip
+    backup_archive: true
+    rclone_remote: onedrive
+    remote_dir: "Ph.D/5. Source code"
+    onedrive_token: ""
+    onedrive_drive_type: personal
+    onedrive_drive_id: e878c29078124394
+    _archive: "/tmp/{{ backup_src | basename }}-{{ ansible_date_time.date }}.tar.gz"
+
+  tasks:
+    - import_tasks: tasks/rclone-setup.yml
+
+    - name: Lệnh xem tiến độ (chạy ở terminal khác)
+      debug:
+        msg: "ssh -t -i {{ lookup('ansible.builtin.config', 'DEFAULT_PRIVATE_KEY_FILE') }} {{ ansible_user | default('root') }}@{{ ansible_host }} rclone-progress"
+
+    - name: Nén và upload archive
+      when: backup_archive | bool
+      block:
+        - command:
+            argv: [tar, -czf, "{{ _archive }}", -C, "{{ backup_src | dirname }}", "{{ backup_src | basename }}"]
+        - command:
+            argv: [rclone, copyto, "{{ _archive }}", "{{ rclone_remote }}:{{ remote_dir }}/{{ _archive | basename }}"]
+      always:
+        - file:
+            path: "{{ _archive }}"
+            state: absent
+
+    - name: Upload nguyên file/thư mục
+      command:
+        argv: [rclone, copy, "{{ backup_src }}", "{{ rclone_remote }}:{{ remote_dir }}"]
+      when: not backup_archive | bool
+
+    - name: Liệt kê thư mục đích
+      command:
+        argv: [rclone, ls, "{{ rclone_remote }}:{{ remote_dir }}"]
+      register: _ls
+      changed_when: false
+
+    - debug:
+        var: _ls.stdout_lines

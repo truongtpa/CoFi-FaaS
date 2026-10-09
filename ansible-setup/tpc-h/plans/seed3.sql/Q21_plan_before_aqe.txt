@@ -1,0 +1,31 @@
+TakeOrderedAndProject(limit=100, orderBy=[numwait#2612L DESC NULLS LAST,s_name#105 ASC NULLS FIRST], output=[s_name#105,numwait#2612L])
++- HashAggregate(keys=[s_name#105], functions=[count(1)], output=[s_name#105, numwait#2612L])
+   +- HashAggregate(keys=[s_name#105], functions=[partial_count(1)], output=[s_name#105, count#2656L])
+      +- Project [s_name#105]
+         +- BroadcastHashJoin [s_nationkey#107L], [n_nationkey#120L], Inner, BuildRight, false
+            :- Project [s_name#105, s_nationkey#107L]
+            :  +- SortMergeJoin [l_orderkey#0L], [o_orderkey#34L], Inner
+            :     :- Project [s_name#105, s_nationkey#107L, l_orderkey#0L]
+            :     :  +- SortMergeJoin [s_suppkey#104L], [l_suppkey#2L], Inner
+            :     :     :- Project [s_suppkey#104L, s_name#105, s_nationkey#107L]
+            :     :     :  +- Filter ((isnotnull(s_suppkey#104L) AND isnotnull(s_nationkey#107L)) AND might_contain(scalar-subquery#2654 [], xxhash64(s_nationkey#107L, 42)))
+            :     :     :     :  +- Aggregate [bloom_filter_agg(xxhash64(n_nationkey#120L, 42), 1000000, 8388608, 0, 0) AS bloomFilter#2653]
+            :     :     :     :     +- Project [n_nationkey#120L]
+            :     :     :     :        +- Filter ((isnotnull(n_name#121) AND (n_name#121 = ALGERIA)) AND isnotnull(n_nationkey#120L))
+            :     :     :     :           +- Relation [n_nationkey#120L,n_name#121,n_regionkey#122L,n_comment#123] parquet
+            :     :     :     +- FileScan parquet [s_suppkey#104L,s_name#105,s_nationkey#107L] Batched: true, DataFilters: [isnotnull(s_suppkey#104L), isnotnull(s_nationkey#107L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/supplier.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(s_suppkey), IsNotNull(s_nationkey)], ReadSchema: struct<s_suppkey:bigint,s_name:string,s_nationkey:bigint>
+            :     :     +- SortMergeJoin [l_orderkey#0L], [l_orderkey#2633L], LeftAnti, NOT (l_suppkey#2635L = l_suppkey#2L)
+            :     :        :- SortMergeJoin [l_orderkey#0L], [l_orderkey#2616L], LeftSemi, NOT (l_suppkey#2618L = l_suppkey#2L)
+            :     :        :  :- Project [l_orderkey#0L, l_suppkey#2L]
+            :     :        :  :  +- Filter ((((isnotnull(l_receiptdate#12) AND isnotnull(l_commitdate#11)) AND (l_receiptdate#12 > l_commitdate#11)) AND isnotnull(l_suppkey#2L)) AND isnotnull(l_orderkey#0L))
+            :     :        :  :     +- FileScan parquet [l_orderkey#0L,l_suppkey#2L,l_commitdate#11,l_receiptdate#12] Batched: true, DataFilters: [isnotnull(l_receiptdate#12), isnotnull(l_commitdate#11), (l_receiptdate#12 > l_commitdate#11), i..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_receiptdate), IsNotNull(l_commitdate), IsNotNull(l_suppkey), IsNotNull(l_orderkey)], ReadSchema: struct<l_orderkey:bigint,l_suppkey:bigint,l_commitdate:date,l_receiptdate:date>
+            :     :        :  +- FileScan parquet [l_orderkey#2616L,l_suppkey#2618L] Batched: true, DataFilters: [], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<l_orderkey:bigint,l_suppkey:bigint>
+            :     :        +- Project [l_orderkey#2633L, l_suppkey#2635L]
+            :     :           +- Filter ((isnotnull(l_receiptdate#2645) AND isnotnull(l_commitdate#2644)) AND (l_receiptdate#2645 > l_commitdate#2644))
+            :     :              +- FileScan parquet [l_orderkey#2633L,l_suppkey#2635L,l_commitdate#2644,l_receiptdate#2645] Batched: true, DataFilters: [isnotnull(l_receiptdate#2645), isnotnull(l_commitdate#2644), (l_receiptdate#2645 > l_commitdate#..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_receiptdate), IsNotNull(l_commitdate)], ReadSchema: struct<l_orderkey:bigint,l_suppkey:bigint,l_commitdate:date,l_receiptdate:date>
+            :     +- Project [o_orderkey#34L]
+            :        +- Filter ((isnotnull(o_orderstatus#36) AND (o_orderstatus#36 = F)) AND isnotnull(o_orderkey#34L))
+            :           +- FileScan parquet [o_orderkey#34L,o_orderstatus#36] Batched: true, DataFilters: [isnotnull(o_orderstatus#36), (o_orderstatus#36 = F), isnotnull(o_orderkey#34L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_orderstatus), EqualTo(o_orderstatus,F), IsNotNull(o_orderkey)], ReadSchema: struct<o_orderkey:bigint,o_orderstatus:string>
+            +- Project [n_nationkey#120L]
+               +- Filter ((isnotnull(n_name#121) AND (n_name#121 = ALGERIA)) AND isnotnull(n_nationkey#120L))
+                  +- FileScan parquet [n_nationkey#120L,n_name#121] Batched: true, DataFilters: [isnotnull(n_name#121), (n_name#121 = ALGERIA), isnotnull(n_nationkey#120L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/nation.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(n_name), EqualTo(n_name,ALGERIA), IsNotNull(n_nationkey)], ReadSchema: struct<n_nationkey:bigint,n_name:string>

@@ -1,0 +1,18 @@
+[
+  {
+    "task_name": "step2-supplier--combine",
+    "est_elements": 89293
+  },
+  {
+    "task_name": "step4-part--combine",
+    "est_elements": 241468
+  },
+  {
+    "task_name": "step8-join-excess--combine",
+    "est_elements": 10000
+  },
+  {
+    "task_name": "step1-nation--combine",
+    "est_elements": 1
+  }
+]

@@ -1,0 +1,576 @@
+{
+  "q1": {
+    "seed1": {
+      "delta": 77
+    },
+    "seed2": {
+      "delta": 117
+    },
+    "seed3": {
+      "delta": 104
+    },
+    "seed4": {
+      "delta": 83
+    },
+    "seed5": {
+      "delta": 62
+    }
+  },
+  "q2": {
+    "seed1": {
+      "size": 50,
+      "type": "BRASS",
+      "region": "MIDDLE EAST"
+    },
+    "seed2": {
+      "size": 39,
+      "type": "NICKEL",
+      "region": "EUROPE"
+    },
+    "seed3": {
+      "size": 16,
+      "type": "COPPER",
+      "region": "MIDDLE EAST"
+    },
+    "seed4": {
+      "size": 4,
+      "type": "STEEL",
+      "region": "ASIA"
+    },
+    "seed5": {
+      "size": 43,
+      "type": "BRASS",
+      "region": "AFRICA"
+    }
+  },
+  "q3": {
+    "seed1": {
+      "segment": "HOUSEHOLD",
+      "date": "1995-03-30"
+    },
+    "seed2": {
+      "segment": "AUTOMOBILE",
+      "date": "1995-03-20"
+    },
+    "seed3": {
+      "segment": "HOUSEHOLD",
+      "date": "1995-03-26"
+    },
+    "seed4": {
+      "segment": "AUTOMOBILE",
+      "date": "1995-03-15"
+    },
+    "seed5": {
+      "segment": "BUILDING",
+      "date": "1995-03-05"
+    }
+  },
+  "q4": {
+    "seed1": {
+      "date": "1997-09-01"
+    },
+    "seed2": {
+      "date": "1996-01-01"
+    },
+    "seed3": {
+      "date": "1997-01-01"
+    },
+    "seed4": {
+      "date": "1995-05-01"
+    },
+    "seed5": {
+      "date": "1993-10-01"
+    }
+  },
+  "q5": {
+    "seed1": {
+      "region": "MIDDLE EAST",
+      "date": "1994-01-01"
+    },
+    "seed2": {
+      "region": "AFRICA",
+      "date": "1995-01-01"
+    },
+    "seed3": {
+      "region": "AMERICA",
+      "date": "1996-01-01"
+    },
+    "seed4": {
+      "region": "ASIA",
+      "date": "1997-01-01"
+    },
+    "seed5": {
+      "region": "ASIA",
+      "date": "1994-01-01"
+    }
+  },
+  "q6": {
+    "seed1": {
+      "date": "1994-01-01",
+      "discount": "0.05",
+      "quantity": "24"
+    },
+    "seed2": {
+      "date": "1995-01-01",
+      "discount": "0.08",
+      "quantity": "25"
+    },
+    "seed3": {
+      "date": "1996-01-01",
+      "discount": "0.09",
+      "quantity": "25"
+    },
+    "seed4": {
+      "date": "1997-01-01",
+      "discount": "0.04",
+      "quantity": "24"
+    },
+    "seed5": {
+      "date": "1994-01-01",
+      "discount": "0.07",
+      "quantity": "25"
+    }
+  },
+  "q7": {
+    "seed1": {
+      "nation1": "IRAN",
+      "nation2": "ETHIOPIA"
+    },
+    "seed2": {
+      "nation1": "SAUDI ARABIA",
+      "nation2": "MOROCCO"
+    },
+    "seed3": {
+      "nation1": "RUSSIA",
+      "nation2": "PERU"
+    },
+    "seed4": {
+      "nation1": "FRANCE",
+      "nation2": "BRAZIL"
+    },
+    "seed5": {
+      "nation1": "MOZAMBIQUE",
+      "nation2": "JAPAN"
+    }
+  },
+  "q8": {
+    "seed1": {
+      "nation": "ETHIOPIA",
+      "region": "AFRICA",
+      "type": "ECONOMY POLISHED NICKEL"
+    },
+    "seed2": {
+      "nation": "MOROCCO",
+      "region": "AFRICA",
+      "type": "MEDIUM POLISHED BRASS"
+    },
+    "seed3": {
+      "nation": "PERU",
+      "region": "AMERICA",
+      "type": "STANDARD BURNISHED STEEL"
+    },
+    "seed4": {
+      "nation": "BRAZIL",
+      "region": "AMERICA",
+      "type": "ECONOMY BURNISHED COPPER"
+    },
+    "seed5": {
+      "nation": "JAPAN",
+      "region": "ASIA",
+      "type": "MEDIUM PLATED TIN"
+    }
+  },
+  "q9": {
+    "seed1": {
+      "color": "rosy"
+    },
+    "seed2": {
+      "color": "honeydew"
+    },
+    "seed3": {
+      "color": "bisque"
+    },
+    "seed4": {
+      "color": "puff"
+    },
+    "seed5": {
+      "color": "indian"
+    }
+  },
+  "q10": {
+    "seed1": {
+      "date": "1994-11-01"
+    },
+    "seed2": {
+      "date": "1993-07-01"
+    },
+    "seed3": {
+      "date": "1993-05-01"
+    },
+    "seed4": {
+      "date": "1993-03-01"
+    },
+    "seed5": {
+      "date": "1995-01-01"
+    }
+  },
+  "q11": {
+    "seed1": {
+      "nation": "ARGENTINA",
+      "fraction": "0.0000003333"
+    },
+    "seed2": {
+      "nation": "EGYPT",
+      "fraction": "0.0000003333"
+    },
+    "seed3": {
+      "nation": "ROMANIA",
+      "fraction": "0.0000003333"
+    },
+    "seed4": {
+      "nation": "INDONESIA",
+      "fraction": "0.0000003333"
+    },
+    "seed5": {
+      "nation": "UNITED STATES",
+      "fraction": "0.0000003333"
+    }
+  },
+  "q12": {
+    "seed1": {
+      "shipmode1": "REG AIR",
+      "shipmode2": "RAIL",
+      "date": "1994-01-01"
+    },
+    "seed2": {
+      "shipmode1": "REG AIR",
+      "shipmode2": "TRUCK",
+      "date": "1996-01-01"
+    },
+    "seed3": {
+      "shipmode1": "AIR",
+      "shipmode2": "FOB",
+      "date": "1997-01-01"
+    },
+    "seed4": {
+      "shipmode1": "RAIL",
+      "shipmode2": "SHIP",
+      "date": "1994-01-01"
+    },
+    "seed5": {
+      "shipmode1": "TRUCK",
+      "shipmode2": "REG AIR",
+      "date": "1995-01-01"
+    }
+  },
+  "q13": {
+    "seed1": {
+      "word1": "pending",
+      "word2": "requests"
+    },
+    "seed2": {
+      "word1": "unusual",
+      "word2": "accounts"
+    },
+    "seed3": {
+      "word1": "unusual",
+      "word2": "deposits"
+    },
+    "seed4": {
+      "word1": "express",
+      "word2": "requests"
+    },
+    "seed5": {
+      "word1": "special",
+      "word2": "accounts"
+    }
+  },
+  "q14": {
+    "seed1": {
+      "date": "1994-12-01"
+    },
+    "seed2": {
+      "date": "1996-08-01"
+    },
+    "seed3": {
+      "date": "1997-12-01"
+    },
+    "seed4": {
+      "date": "1994-04-01"
+    },
+    "seed5": {
+      "date": "1995-08-01"
+    }
+  },
+  "q15": {
+    "seed1": {
+      "date": "1996-07-01"
+    },
+    "seed2": {
+      "date": "1997-05-01"
+    },
+    "seed3": {
+      "date": "1995-09-01"
+    },
+    "seed4": {
+      "date": "1993-12-01"
+    },
+    "seed5": {
+      "date": "1997-02-01"
+    }
+  },
+  "q16": {
+    "seed1": {
+      "brand": "Brand#21",
+      "type": "ECONOMY POLISHED",
+      "sizes": [
+        5,
+        2,
+        24,
+        28,
+        22,
+        8,
+        19,
+        46
+      ]
+    },
+    "seed2": {
+      "brand": "Brand#22",
+      "type": "STANDARD PLATED",
+      "sizes": [
+        25,
+        27,
+        30,
+        6,
+        48,
+        12,
+        26,
+        2
+      ]
+    },
+    "seed3": {
+      "brand": "Brand#42",
+      "type": "STANDARD ANODIZED",
+      "sizes": [
+        42,
+        31,
+        3,
+        50,
+        32,
+        22,
+        10,
+        46
+      ]
+    },
+    "seed4": {
+      "brand": "Brand#52",
+      "type": "PROMO PLATED",
+      "sizes": [
+        9,
+        35,
+        24,
+        47,
+        16,
+        32,
+        38,
+        23
+      ]
+    },
+    "seed5": {
+      "brand": "Brand#22",
+      "type": "PROMO ANODIZED",
+      "sizes": [
+        25,
+        40,
+        44,
+        45,
+        46,
+        43,
+        22,
+        6
+      ]
+    }
+  },
+  "q17": {
+    "seed1": {
+      "brand": "Brand#14",
+      "container": "SM JAR"
+    },
+    "seed2": {
+      "brand": "Brand#21",
+      "container": "MED JAR"
+    },
+    "seed3": {
+      "brand": "Brand#21",
+      "container": "WRAP BOX"
+    },
+    "seed4": {
+      "brand": "Brand#25",
+      "container": "SM CAN"
+    },
+    "seed5": {
+      "brand": "Brand#25",
+      "container": "MED JAR"
+    }
+  },
+  "q18": {
+    "seed1": {
+      "quantity": "315"
+    },
+    "seed2": {
+      "quantity": "312"
+    },
+    "seed3": {
+      "quantity": "312"
+    },
+    "seed4": {
+      "quantity": "315"
+    },
+    "seed5": {
+      "quantity": "315"
+    }
+  },
+  "q19": {
+    "seed1": {
+      "brand1": "Brand#11",
+      "brand2": "Brand#33",
+      "brand3": "Brand#21",
+      "quantity1": 3,
+      "quantity2": 19,
+      "quantity3": 28
+    },
+    "seed2": {
+      "brand1": "Brand#33",
+      "brand2": "Brand#31",
+      "brand3": "Brand#51",
+      "quantity1": 5,
+      "quantity2": 14,
+      "quantity3": 28
+    },
+    "seed3": {
+      "brand1": "Brand#54",
+      "brand2": "Brand#15",
+      "brand3": "Brand#42",
+      "quantity1": 1,
+      "quantity2": 19,
+      "quantity3": 30
+    },
+    "seed4": {
+      "brand1": "Brand#14",
+      "brand2": "Brand#35",
+      "brand3": "Brand#23",
+      "quantity1": 8,
+      "quantity2": 14,
+      "quantity3": 22
+    },
+    "seed5": {
+      "brand1": "Brand#34",
+      "brand2": "Brand#55",
+      "brand3": "Brand#55",
+      "quantity1": 4,
+      "quantity2": 19,
+      "quantity3": 25
+    }
+  },
+  "q20": {
+    "seed1": {
+      "color": "almond",
+      "date": "1995-01-01",
+      "nation": "JAPAN"
+    },
+    "seed2": {
+      "color": "magenta",
+      "date": "1995-01-01",
+      "nation": "ARGENTINA"
+    },
+    "seed3": {
+      "color": "navajo",
+      "date": "1993-01-01",
+      "nation": "UNITED STATES"
+    },
+    "seed4": {
+      "color": "peru",
+      "date": "1995-01-01",
+      "nation": "UNITED KINGDOM"
+    },
+    "seed5": {
+      "color": "rosy",
+      "date": "1997-01-01",
+      "nation": "RUSSIA"
+    }
+  },
+  "q21": {
+    "seed1": {
+      "nation": "IRAQ"
+    },
+    "seed2": {
+      "nation": "KENYA"
+    },
+    "seed3": {
+      "nation": "ALGERIA"
+    },
+    "seed4": {
+      "nation": "IRAQ"
+    },
+    "seed5": {
+      "nation": "VIETNAM"
+    }
+  },
+  "q22": {
+    "seed1": {
+      "i1": [
+        "32",
+        "29",
+        "23",
+        "21",
+        "42",
+        "41",
+        "35"
+      ]
+    },
+    "seed2": {
+      "i1": [
+        "21",
+        "43",
+        "25",
+        "32",
+        "33",
+        "39",
+        "44"
+      ]
+    },
+    "seed3": {
+      "i1": [
+        "44",
+        "35",
+        "30",
+        "24",
+        "43",
+        "20",
+        "27"
+      ]
+    },
+    "seed4": {
+      "i1": [
+        "43",
+        "27",
+        "35",
+        "38",
+        "31",
+        "30",
+        "28"
+      ]
+    },
+    "seed5": {
+      "i1": [
+        "42",
+        "20",
+        "41",
+        "30",
+        "22",
+        "35",
+        "23"
+      ]
+    }
+  }
+}

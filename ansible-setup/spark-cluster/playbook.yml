@@ -1,0 +1,32 @@
+---
+- name: Setup Spark Cluster
+  hosts: spark-cluster
+  become: yes
+
+  roles:
+    - common
+    - java
+    - spark
+
+  post_tasks:
+    - name: Display cluster information
+      debug:
+        msg: |
+          ========================================
+          Spark Cluster Setup Complete
+          ========================================
+          
+          Master Node: {{ spark_master_host }}
+          Web UI: http://{{ spark_master_host }}:{{ spark_master_webui_port }}
+          
+          To start the cluster:
+            SSH to master: ssh {{ spark_user }}@{{ spark_master_host }}
+            Run: ./start-cluster.sh
+          
+          To stop the cluster:
+            Run: ./stop-cluster.sh
+          
+          Workers: {{ groups['spark-workers'] | length }}
+          ========================================
+      run_once: yes
+      when: "'spark-master' in group_names"

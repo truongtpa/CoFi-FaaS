@@ -1,0 +1,14 @@
+[
+  {
+    "task_name": "step1-region--combine",
+    "est_elements": 2
+  },
+  {
+    "task_name": "step5-part--combine",
+    "est_elements": 149206
+  },
+  {
+    "task_name": "step3-join-region-nation--combine",
+    "est_elements": 6
+  }
+]

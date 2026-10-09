@@ -1,0 +1,74 @@
+---
+# Cài rclone và tạo remote OneDrive trên node từ onedrive_token.
+# rclone tự refresh access token bằng refresh_token và tự tra drive_id,
+# nên access token trong secrets.yml hết hạn cũng không sao.
+- name: Gỡ rclone cũ từ apt
+  apt:
+    name: rclone
+    state: absent
+
+- name: Cài gói phụ thuộc
+  apt:
+    name: [curl, unzip]
+    update_cache: true
+
+- name: Cài rclone bản mới nhất
+  shell: set -o pipefail && curl -fsSL https://rclone.org/install.sh | bash
+  args:
+    executable: /bin/bash
+  register: _rclone_install
+  changed_when: _rclone_install.rc == 0
+  failed_when: _rclone_install.rc not in [0, 3]
+
+- name: Xoá remote cũ
+  command:
+    argv: [rclone, config, delete, "{{ rclone_remote }}"]
+  changed_when: false
+
+- name: Tạo remote OneDrive
+  command:
+    argv:
+      - rclone
+      - config
+      - create
+      - "{{ rclone_remote }}"
+      - onedrive
+      - "token={{ onedrive_token if onedrive_token is string else onedrive_token | to_json }}"
+      - "drive_id={{ onedrive_drive_id }}"
+      - "drive_type={{ onedrive_drive_type }}"
+      - config_refresh_token=false
+      - --non-interactive
+  no_log: true
+
+- name: Kiểm tra kết nối
+  command:
+    argv: [rclone, about, "{{ rclone_remote }}:"]
+  changed_when: false
+
+- name: Cài script xem tiến độ rclone-progress
+  copy:
+    dest: /usr/local/bin/rclone-progress
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      # Hiển thị tiến độ của lệnh rclone copy/copyto đang chạy, đọc từ /proc/PID/io.
+      # Nguồn là đường dẫn local -> upload (đếm rchar), ngược lại -> download (đếm wchar).
+      pid=$(pgrep -nf '^rclone copy') || { echo "Không có rclone copy/copyto nào đang chạy"; exit 1; }
+      mapfile -d '' args < "/proc/$pid/cmdline"
+      src=${args[2]}
+      if [ -e "$src" ]; then
+        key=rchar; total=$(du -sb "$src" | cut -f1)
+      else
+        key=wchar; total=$(rclone size --json "$src" | grep -o '"bytes":[0-9]*' | cut -d: -f2)
+      fi
+      echo "${args[1]} $src -> ${args[3]}"
+      prev=0
+      while b=$(awk -v k="$key:" '$1==k{print $2}' "/proc/$pid/io" 2>/dev/null) && [ -n "$b" ]; do
+        [ "$prev" -gt 0 ] && speed=$(( (b - prev) / 5 )) || speed=0
+        eta=$(( speed > 0 ? (total - b) / speed : 0 ))
+        printf '\r%6d / %d MiB  %3d%%  %4d MiB/s  ETA %dm%02ds   ' \
+          $((b >> 20)) $((total >> 20)) $((b * 100 / total)) $((speed >> 20)) $((eta / 60)) $((eta % 60))
+        prev=$b
+        sleep 5
+      done
+      echo; echo "rclone đã kết thúc"

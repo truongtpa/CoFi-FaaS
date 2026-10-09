@@ -1,0 +1,27 @@
+---
+- name: Update Prometheus scrape configs
+  hosts: monitoring
+  become: yes
+  tasks:
+    - name: Backup current config
+      copy:
+        src: /etc/prometheus/prometheus.yml
+        dest: /etc/prometheus/prometheus.yml.backup
+        remote_src: yes
+
+    - name: Update Prometheus config
+      template:
+        src: templates/prometheus.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+        validate: '/usr/local/bin/promtool check config %s'
+      notify: restart prometheus
+
+  handlers:
+    - name: restart prometheus
+      systemd:
+        name: prometheus
+        state: restarted
+        enabled: yes
+        daemon_reload: yes

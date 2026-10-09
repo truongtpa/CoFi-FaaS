@@ -1,0 +1,25 @@
+---
+- name: Stop Spark Cluster
+  hosts: spark-master
+  become: yes
+
+  tasks:
+    - name: Stop Spark cluster
+      become_user: spark
+      shell: |
+        cd {{ spark_home }}
+        sbin/stop-all.sh
+      register: stop_output
+
+    - name: Display output
+      debug:
+        var: stop_output.stdout_lines
+
+    - name: Verify processes stopped
+      become_user: spark
+      shell: jps
+      register: jps_output
+
+    - name: Display remaining processes
+      debug:
+        var: jps_output.stdout_lines

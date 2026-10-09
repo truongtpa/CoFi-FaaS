@@ -1,0 +1,65 @@
+# add_cadvisor_telegraf.yml
+- name: Add cAdvisor scraping to Telegraf
+  hosts: nodes
+  become: true
+  vars:
+    telegraf_config_dir: "/etc/telegraf"
+    kubelet_token: "eyJhbGciOiJSUzI1NiIsImtpZCI6Im1XeldjZG1vanVRdXBwRjMwa0JVSG8wSjNpZllfR1pjcDlDX3lyR2Q2SEEifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJ0ZWxlZ3JhZi1jYWR2aXNvci10b2tlbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJ0ZWxlZ3JhZi1jYWR2aXNvciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImJkYmYzZjA5LTg2YWYtNDMwZi1iM2RhLTk2MjlkODA3ODhiNiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTp0ZWxlZ3JhZi1jYWR2aXNvciJ9.BEEV9n7veTV3b8mjpDAiq5DsgyGgLoX-vz7tUXhKFp0H_oJQ_IcAFFzcaZ3L_RZeXamhSIcR_p5JmnzCH898-8gIW_tGemcJSvfjwCvegv2eDCEBtip3l7FpbbY8pQqqgk2CFpxpuWWBtYvnTGUy3bRHaBO6FyhgoQssW7z8GiXdbez7aeqeCXkM1WSq4wJvpaxf7BFvFcTlD-tZjemO7bR5g_7q4HGDTGUpN-SQOZOlcnzIfvJqXn5Q1Sp5Rc8Ui8GdRNYvearvjHvLRfnaXxYQZnRcSg1x626wGl1j6q0qYUZuhHBKN4Lh8yjVBVD3D-SSWGsfTovamGNBFmoBrw"
+
+  tasks:
+    - name: Write kubelet bearer token file
+      copy:
+        dest: /etc/telegraf/kubelet-token
+        content: "{{ kubelet_token }}"
+        owner: root
+        group: telegraf
+        mode: "0640"
+
+    - name: Copy cAdvisor Telegraf config
+      copy:
+        dest: "{{ telegraf_config_dir }}/telegraf.d/cadvisor.conf"
+        content: |
+          [[inputs.prometheus]]
+            urls = ["https://127.0.0.1:10250/metrics/cadvisor"]
+            bearer_token = "/etc/telegraf/kubelet-token"
+            insecure_skip_verify = true
+            metric_version = 2
+
+            fieldinclude = [
+              "container_cpu_usage_seconds_total",
+              "container_memory_working_set_bytes",
+              "container_fs_reads_bytes_total",
+              "container_fs_writes_bytes_total",
+              "container_network_receive_bytes_total",
+              "container_network_transmit_bytes_total",
+            ]
+
+            [inputs.prometheus.tagdrop]
+              container = ["POD", ""]
+
+            [inputs.prometheus.tags]
+              scrape_source = "cadvisor"
+        owner: root
+        group: telegraf
+        mode: "0640"
+      notify: Restart Telegraf
+
+    - name: Verify Telegraf config syntax
+      command: >
+        telegraf
+        --config /etc/telegraf/telegraf.conf
+        --config-directory /etc/telegraf/telegraf.d
+        --test --input-filter prometheus
+      register: telegraf_test
+      changed_when: false
+      failed_when: false
+
+    - name: Show test output
+      debug:
+        msg: "{{ telegraf_test.stdout_lines[:10] }}"
+
+  handlers:
+    - name: Restart Telegraf
+      systemd:
+        name: telegraf
+        state: restarted

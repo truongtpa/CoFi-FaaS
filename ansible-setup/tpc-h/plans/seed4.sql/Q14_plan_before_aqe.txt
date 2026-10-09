@@ -1,0 +1,10 @@
+HashAggregate(keys=[], functions=[sum(CASE WHEN StartsWith(p_type#76, PROMO) THEN (l_extendedprice#5 * (1 - l_discount#6)) ELSE 0.0000 END), sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[promo_revenue#3187])
++- HashAggregate(keys=[], functions=[partial_sum(CASE WHEN StartsWith(p_type#76, PROMO) THEN (l_extendedprice#5 * (1 - l_discount#6)) ELSE 0.0000 END), partial_sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[sum#3195, isEmpty#3196, sum#3197, isEmpty#3198])
+   +- Project [l_extendedprice#5, l_discount#6, p_type#76]
+      +- SortMergeJoin [l_partkey#1L], [p_partkey#72L], Inner
+         :- Project [l_partkey#1L, l_extendedprice#5, l_discount#6]
+         :  +- Filter (((isnotnull(l_shipdate#10) AND (l_shipdate#10 >= 1997-08-01)) AND (l_shipdate#10 < 1997-09-01)) AND isnotnull(l_partkey#1L))
+         :     +- FileScan parquet [l_partkey#1L,l_extendedprice#5,l_discount#6,l_shipdate#10] Batched: true, DataFilters: [isnotnull(l_shipdate#10), (l_shipdate#10 >= 1997-08-01), (l_shipdate#10 < 1997-09-01), isnotnull..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), GreaterThanOrEqual(l_shipdate,1997-08-01), LessThan(l_shipdate,1997-09-01..., ReadSchema: struct<l_partkey:bigint,l_extendedprice:decimal(11,2),l_discount:decimal(11,2),l_shipdate:date>
+         +- Project [p_partkey#72L, p_type#76]
+            +- Filter isnotnull(p_partkey#72L)
+               +- FileScan parquet [p_partkey#72L,p_type#76] Batched: true, DataFilters: [isnotnull(p_partkey#72L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/part.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(p_partkey)], ReadSchema: struct<p_partkey:bigint,p_type:string>

@@ -1,0 +1,175 @@
+---
+- name: Install InfluxDB
+  hosts: monitoring
+  become: true
+  vars:
+    influxdb_version: "2.7.10"
+    influxdb_admin_user: "admin"
+    influxdb_admin_password: "lannion-enssat"
+    influxdb_org: "myorg"
+    influxdb_bucket: "metrics"
+    influxdb_retention: "30d"
+    influxdb_http_port: 8086
+    influxdb_data_dir: "/var/lib/influxdb2"
+    influxdb_config_dir: "/etc/influxdb"
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - wget
+          - gnupg2
+          - apt-transport-https
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Remove old influxdata GPG keys and repo (cleanup)
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/trusted.gpg.d/influxdata.gpg
+        - /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg
+        - /etc/apt/sources.list.d/influxdata.list
+      when: ansible_os_family == "Debian"
+
+    - name: Download and install InfluxDB GPG keys
+      shell: |
+        curl -fsSL https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor >> /tmp/influxdata-combined.gpg
+        curl -fsSL https://repos.influxdata.com/influxdata-archive.key | gpg --dearmor >> /tmp/influxdata-combined.gpg
+        mv /tmp/influxdata-combined.gpg /etc/apt/trusted.gpg.d/influxdata.gpg
+        chmod 644 /etc/apt/trusted.gpg.d/influxdata.gpg
+      when: ansible_os_family == "Debian"
+
+    - name: Add InfluxDB repository
+      copy:
+        dest: /etc/apt/sources.list.d/influxdata.list
+        content: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata.gpg] https://repos.influxdata.com/debian stable main\n"
+        owner: root
+        group: root
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Install InfluxDB
+      apt:
+        name: influxdb2
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Add InfluxDB repository (RHEL/CentOS)
+      yum_repository:
+        name: influxdata
+        description: InfluxData Repository
+        baseurl: https://repos.influxdata.com/rhel/$releasever/$basearch/stable
+        gpgkey: https://repos.influxdata.com/influxdata-archive_compat.key
+        gpgcheck: yes
+        enabled: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Install InfluxDB (RHEL/CentOS)
+      yum:
+        name: influxdb2
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Create InfluxDB data directory
+      file:
+        path: "{{ influxdb_data_dir }}"
+        state: directory
+        owner: influxdb
+        group: influxdb
+        mode: "0755"
+
+    - name: Create InfluxDB config directory
+      file:
+        path: "{{ influxdb_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure InfluxDB
+      copy:
+        dest: "{{ influxdb_config_dir }}/config.toml"
+        content: |
+          bolt-path = "{{ influxdb_data_dir }}/influxd.bolt"
+          engine-path = "{{ influxdb_data_dir }}/engine"
+          http-bind-address = ":{{ influxdb_http_port }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart InfluxDB
+
+    - name: Enable and start InfluxDB service
+      systemd:
+        name: influxdb
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Wait for InfluxDB to be ready
+      wait_for:
+        port: "{{ influxdb_http_port }}"
+        host: 127.0.0.1
+        delay: 3
+        timeout: 60
+
+    - name: Initialize InfluxDB and create config
+      shell: |
+        influx setup \
+          --host http://localhost:{{ influxdb_http_port }} \
+          --username {{ influxdb_admin_user }} \
+          --password {{ influxdb_admin_password }} \
+          --org {{ influxdb_org }} \
+          --bucket {{ influxdb_bucket }} \
+          --retention {{ influxdb_retention }} \
+          --force
+      register: influxdb_setup
+      changed_when: influxdb_setup.rc == 0
+
+    - name: Get token from config file
+      shell: grep '^  token = ' /root/.influxdbv2/configs | head -1 | sed 's/  token = "//;s/"//'
+      register: token_from_config
+      changed_when: false
+
+    - name: Set token fact
+      set_fact:
+        influxdb_admin_token: "{{ token_from_config.stdout | trim }}"
+
+    - name: Fail if token not found
+      fail:
+        msg: "Could not retrieve InfluxDB token"
+      when: influxdb_admin_token == ""
+
+    - name: Save token to file
+      copy:
+        dest: /etc/influxdb/admin-token.txt
+        content: "{{ influxdb_admin_token }}"
+        mode: "0600"
+
+    - name: Configure firewall (ufw)
+      ufw:
+        rule: allow
+        port: "{{ influxdb_http_port }}"
+        proto: tcp
+      when: ansible_os_family == "Debian"
+      ignore_errors: yes
+
+    - name: Print InfluxDB info
+      debug:
+        msg:
+          - "InfluxDB installed successfully!"
+          - "URL: http://{{ ansible_host }}:{{ influxdb_http_port }}"
+          - "Org: {{ influxdb_org }}"
+          - "Bucket: {{ influxdb_bucket }}"
+          - "Admin token: {{ influxdb_admin_token }}"
+          - "Token saved at: /etc/influxdb/admin-token.txt"
+
+  handlers:
+    - name: Restart InfluxDB
+      systemd:
+        name: influxdb
+        state: restarted

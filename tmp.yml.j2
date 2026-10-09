@@ -1,0 +1,39 @@
+name: nfsprobe
+description: NFS read probe for the size x parallelism sweep - half of lineitem written to NFS by a fixed stage, then read back by the measured stage, almost nothing written
+
+variables:
+  enable_bf: 1
+  enable_nfs_shuffle: 1
+  bucket: tpch-100
+  base_path: /mnt/
+  s3_metadata: 'benchmarks/metadata/{{ bucket }}.json'
+  nfs_folder: '/mnt/filters'
+
+steps:
+  # fixed for every configuration (own size and parallelism): 580 files of ~10 MB on NFS, like an NFS shuffle
+  - name: step1-write-nfs
+    func: scan
+    input: 's3://{{ bucket }}/lineitem.parquet'
+    from_previous_task: None
+    max_size_mb: 5
+    max_parallel: 70
+    params:
+      select: SELECT l_orderkey, l_partkey, l_suppkey, l_quantity, l_extendedprice, l_discount, l_shipdate
+      sql_clauses: WHERE l_orderkey % 2 = 0
+      output_file: '{{ base_path }}/nfsprobe/$task_name/$random.parquet'
+
+  # measured stage: max_size_mb / max_parallel of the sweep. The filter uses every column and is always false, but is
+  # not prunable from row-group stats: every column of every file is read from NFS
+  - name: step2-nfs-read
+    func: aggregate
+    from_previous_task: step1-write-nfs
+    params:
+      sql_clauses: WHERE l_orderkey + l_partkey + l_suppkey + l_quantity + l_extendedprice + l_discount + year(l_shipdate) < 0
+      output_file: '{{ base_path }}/nfsprobe/$task_name/$random.parquet'
+
+  - name: step3-summary-clean
+    func: summary_clean
+    params:
+      output_s3: '{{ base_path }}/nfsprobe'
+      nfs_folder: '{{ nfs_folder }}'
+      is_delete: True

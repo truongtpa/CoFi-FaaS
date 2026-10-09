@@ -1,0 +1,14 @@
+[
+  {
+    "task_name": "step3-join-nation-supplier--combine",
+    "est_elements": 1000
+  },
+  {
+    "task_name": "step1-nation--combine",
+    "est_elements": 2
+  },
+  {
+    "task_name": "step4-orders--combine",
+    "est_elements": 81187008
+  }
+]

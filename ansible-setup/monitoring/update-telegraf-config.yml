@@ -1,0 +1,209 @@
+---
+# Usage:
+#  Chỉ stop telegraf toàn cluster
+#  ansible-playbook update-telegraf-config.yml -e "action=start"
+
+- name: Manage Telegraf across cluster
+  hosts: nodes
+  become: true
+  vars:
+    action: "restart"   # stop | start | restart | update
+    influxdb_url: "http://10.158.1.30:8086"
+    influxdb_token: "LKKjK5OT1uxiXSGoEGqQ3s3j_Pq3KQvA1_bErzUfBl59wKrSzL9Ry-QoEocc339rJKhzLDFdCglIn1_BsPRFiQ=="
+    influxdb_org: "myorg"
+    influxdb_bucket: "metrics"
+    telegraf_interval: "1s"
+    telegraf_flush_interval: "1s"
+    telegraf_hostname: "{{ inventory_hostname }}"
+    telegraf_config_file: "/etc/telegraf/telegraf.conf"
+    telegraf_backup_dir: "/etc/telegraf/backup"
+
+  pre_tasks:
+    - name: Validate action parameter
+      fail:
+        msg: "action không hợp lệ: '{{ action }}'. Chọn một trong: stop, start, restart, update"
+      when: action not in ['stop', 'start', 'restart', 'update']
+
+    - name: Check Telegraf is installed
+      stat:
+        path: /usr/bin/telegraf
+      register: telegraf_binary
+
+    - name: Fail if Telegraf not installed
+      fail:
+        msg: "Telegraf chưa được cài trên {{ inventory_hostname }}. Chạy install_telegraf.yml trước."
+      when: not telegraf_binary.stat.exists
+
+  tasks:
+    - name: "[STOP] Stop Telegraf service"
+      systemd:
+        name: telegraf
+        state: stopped
+      when: action == 'stop'
+
+    - name: "[STOP] Verify Telegraf stopped"
+      command: systemctl is-active telegraf
+      register: stop_status
+      changed_when: false
+      failed_when: false
+      when: action == 'stop'
+
+    - name: "[STOP] Print status"
+      debug:
+        msg: "{{ inventory_hostname }} - Telegraf: {{ stop_status.stdout }}"
+      when: action == 'stop'
+
+    - name: "[START] Start Telegraf service"
+      systemd:
+        name: telegraf
+        state: started
+        enabled: yes
+      when: action == 'start'
+
+    - name: "[START] Verify Telegraf started"
+      command: systemctl is-active telegraf
+      register: start_status
+      changed_when: false
+      when: action == 'start'
+
+    - name: "[START] Print status"
+      debug:
+        msg: "{{ inventory_hostname }} - Telegraf: {{ start_status.stdout }}"
+      when: action == 'start'
+
+    - name: "[RESTART] Restart Telegraf service"
+      systemd:
+        name: telegraf
+        state: restarted
+      when: action == 'restart'
+
+    - name: "[RESTART] Verify Telegraf restarted"
+      command: systemctl is-active telegraf
+      register: restart_status
+      changed_when: false
+      when: action == 'restart'
+
+    - name: "[RESTART] Print status"
+      debug:
+        msg: "{{ inventory_hostname }} - Telegraf: {{ restart_status.stdout }}"
+      when: action == 'restart'
+
+    - name: "[UPDATE] Create backup directory"
+      file:
+        path: "{{ telegraf_backup_dir }}"
+        state: directory
+        mode: "0755"
+      when: action == 'update'
+
+    - name: "[UPDATE] Backup current config"
+      copy:
+        src: "{{ telegraf_config_file }}"
+        dest: "{{ telegraf_backup_dir }}/telegraf.conf.{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      ignore_errors: yes
+      when: action == 'update'
+
+    - name: "[UPDATE] Deploy new Telegraf config"
+      copy:
+        dest: "{{ telegraf_config_file }}"
+        content: |
+          [global_tags]
+            host = "{{ telegraf_hostname }}"
+            cluster = "{{ group_names | first | default('default') }}"
+
+          [agent]
+            interval = "{{ telegraf_interval }}"
+            round_interval = true
+            metric_batch_size = 1000
+            metric_buffer_limit = 10000
+            collection_jitter = "0s"
+            flush_interval = "{{ telegraf_flush_interval }}"
+            flush_jitter = "0s"
+            precision = ""
+            hostname = "{{ telegraf_hostname }}"
+            omit_hostname = false
+
+          [[outputs.influxdb_v2]]
+            urls = ["{{ influxdb_url }}"]
+            token = "{{ influxdb_token }}"
+            organization = "{{ influxdb_org }}"
+            bucket = "{{ influxdb_bucket }}"
+            timeout = "5s"
+            insecure_skip_verify = false
+
+          [[inputs.cpu]]
+            percpu = true
+            totalcpu = true
+            collect_cpu_time = false
+            report_active = false
+
+          [[inputs.disk]]
+            ignore_fs = ["tmpfs", "devtmpfs", "devfs", "iso9660", "overlay", "aufs", "squashfs"]
+
+          [[inputs.diskio]]
+
+          [[inputs.mem]]
+
+          [[inputs.swap]]
+
+          [[inputs.system]]
+
+          [[inputs.net]]
+
+          [[inputs.netstat]]
+
+          [[inputs.processes]]
+
+          [[inputs.kernel]]
+
+          [[inputs.internal]]
+            collect_memstats = false
+        owner: root
+        group: telegraf
+        mode: "0640"
+      register: config_changed
+      when: action == 'update'
+
+    - name: "[UPDATE] Validate new config"
+      command: telegraf --config {{ telegraf_config_file }} --test
+      register: config_test
+      changed_when: false
+      failed_when: config_test.rc != 0
+      when: action == 'update'
+
+    - name: "[UPDATE] Restart Telegraf if config changed"
+      systemd:
+        name: telegraf
+        state: restarted
+      when:
+        - action == 'update'
+        - config_changed.changed
+
+    - name: "[UPDATE] No change detected"
+      debug:
+        msg: "{{ inventory_hostname }} - Config không thay đổi, bỏ qua restart."
+      when:
+        - action == 'update'
+        - not config_changed.changed
+
+    - name: "[UPDATE] Verify Telegraf after update"
+      command: systemctl is-active telegraf
+      register: update_status
+      changed_when: false
+      when: action == 'update'
+
+    - name: "[UPDATE] Print summary"
+      debug:
+        msg:
+          - "Host        : {{ inventory_hostname }}"
+          - "Status      : {{ update_status.stdout }}"
+          - "Config changed: {{ config_changed.changed }}"
+          - "InfluxDB URL: {{ influxdb_url }}"
+      when: action == 'update'
+
+    - name: "[UPDATE] Cleanup old backups (keep last 5)"
+      shell: |
+        ls -t {{ telegraf_backup_dir }}/telegraf.conf.* 2>/dev/null | tail -n +6 | xargs rm -f
+      changed_when: false
+      ignore_errors: yes
+      when: action == 'update'

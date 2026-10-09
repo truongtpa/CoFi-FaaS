@@ -1,0 +1,27 @@
+# Spark defaults configuration
+
+spark.master                     spark://{{ spark_master_host }}:{{ spark_master_port }}
+spark.eventLog.enabled           true
+spark.eventLog.dir               {{ spark_log_dir }}/events
+spark.history.fs.logDirectory    {{ spark_log_dir }}/events
+
+# Network
+spark.driver.host                {{ ansible_default_ipv4.address }}
+spark.driver.bindAddress         0.0.0.0
+
+# Serialization
+spark.serializer                 org.apache.spark.serializer.KryoSerializer
+
+# Memory
+spark.driver.memory              2g
+spark.executor.memory            {{ spark_worker_memory }}
+
+# UI
+spark.ui.reverseProxy            false
+```
+
+## 8. File roles/spark/templates/workers.j2
+```
+{% for host in groups['spark-workers'] %}
+    {{ hostvars[host]['ansible_host'] }}
+{% endfor %}

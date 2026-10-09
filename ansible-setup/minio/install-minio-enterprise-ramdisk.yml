@@ -1,0 +1,74 @@
+---
+- name: Install Docker and Docker Compose
+  hosts: minio
+  become: yes
+  vars:
+    minio_root_user: admin
+    minio_root_password: lannion-enssat
+    minio_ramdisk_mount: /data/minio
+    minio_ramdisk_size: 200G
+
+  tasks:
+    - name: Create minio directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/minio"
+        state: directory
+        mode: '0755'
+
+    - name: Remove minio.license if it is a directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/minio/minio.license"
+        state: absent
+
+    - name: Write license file
+      ansible.builtin.copy:
+        content: "eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhaWQiOjAsImNhcCI6MTAsImV4cCI6MS43OTUxMTYwNDM3NDE1Mzg2MzJlOSwiZmVhdHVyZXMiOlsiT2JqZWN0cyIsIlRhYmxlcyJdLCJncnAiOjAsImlhdCI6MS43ODk5MzIwNDM3NDE1Mzg2MzJlOSwiaXNzIjoic3VibmV0QG1pbi5pbyIsImxpZCI6IjJhNjdmMDMzLTY2NTAtNDQ1OC1iYWEyLWE0YjVhNDY2ZDY1ZiIsIm9yZyI6IlZMVVRFIiwicGxhbiI6IkVOVEVSUFJJU0UiLCJwcm9kdWN0IjoiQUlTdG9yIiwicm9wIjoyLCJzdWIiOiJ0ci5waGFuLnRydW9uZ0BnbWFpbC5jb20iLCJ0cmlhbCI6dHJ1ZSwidmVyIjoxfQ.YvD6cL5rQuQgfDPDFUaFAMT8GI6xvBIUNZDsVpXL7P01DhbFlwj_qnwSP8qKl0crWuY3wQhNcttvYKvV4BMWDHXvJx9mPJ2K0DtnfzGcvKk_NsyXJk8RJ41Hvur8nBjs"
+        dest: "{{ ansible_env.HOME }}/minio/minio.license"
+
+    - name: Remove existing MinIO AIStor container
+      community.docker.docker_container:
+        name: aistor-server
+        state: absent
+
+    - name: Mount tmpfs for MinIO (RAM disk)
+      mount:
+        path: "{{ minio_ramdisk_mount }}"
+        src: tmpfs
+        fstype: tmpfs
+        opts: "size={{ minio_ramdisk_size }},noatime,nosuid,nodev,mode=0755"
+        state: mounted
+
+    - name: Ensure tmpfs is persistent across reboot
+      mount:
+        path: "{{ minio_ramdisk_mount }}"
+        src: tmpfs
+        fstype: tmpfs
+        opts: "size={{ minio_ramdisk_size }},noatime,nosuid,nodev,mode=0755"
+        state: present
+
+    - name: Fix ownership for existing MinIO data
+      file:
+        path: "{{ minio_ramdisk_mount }}"
+        owner: root
+        group: root
+        mode: '0755'
+        recurse: yes
+
+    - name: Run MinIO AIStor container
+      community.docker.docker_container:
+        name: aistor-server
+        image: quay.io/minio/aistor/minio:latest
+        state: started
+        detach: true
+        tty: true
+        ports:
+          - "9000:9000"
+          - "9001:9001"
+        env:
+          MINIO_ROOT_USER: "{{ minio_root_user }}"
+          MINIO_ROOT_PASSWORD: "{{ minio_root_password }}"
+        volumes:
+          - "{{ minio_ramdisk_mount }}:/mnt/data"
+          - "{{ ansible_env.HOME }}/minio/minio.license:/minio.license"
+          - "{{ ansible_env.HOME }}/minio/certs:/etc/minio/certs"
+        command: "minio server /mnt/data --license /minio.license"

@@ -1,0 +1,28 @@
+#!/bin/bash
+# Spark Cluster Stop Script
+
+cd {{ spark_home }}
+
+echo "=================================="
+echo "Stopping Spark Cluster"
+echo "=================================="
+echo ""
+
+echo "Stopping Spark Workers..."
+sbin/stop-workers.sh
+
+echo "Stopping Spark Master..."
+sbin/stop-master.sh
+
+echo ""
+echo "Waiting for processes to stop..."
+sleep 3
+
+echo ""
+echo "=================================="
+echo "Checking Processes"
+echo "=================================="
+jps
+
+echo ""
+echo "Cluster stopped."

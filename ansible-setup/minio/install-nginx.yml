@@ -1,0 +1,74 @@
+---
+- name: Deploy Nginx with Docker
+  hosts: all
+  become: true
+
+  vars:
+    nginx_container_name: nginx
+    nginx_image: nginx:latest
+    nginx_http_port: 80
+    nginx_https_port: 443
+    config_src: "{{ playbook_dir }}/nginx-config/nginx.conf"
+    config_dest: /etc/nginx/nginx.conf
+
+  tasks:
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+          - python3-docker
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages (RHEL)
+      ansible.builtin.yum:
+        name:
+          - docker
+          - python3-docker
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Start and enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create nginx config directory on remote
+      ansible.builtin.file:
+        path: /opt/nginx/config
+        state: directory
+        mode: "0755"
+
+    - name: Copy nginx.conf to remote host
+      ansible.builtin.copy:
+        src: "{{ config_src }}"
+        dest: /opt/nginx/config/nginx.conf
+        mode: "0644"
+      notify: Restart nginx container
+
+    - name: Pull Nginx Docker image
+      community.docker.docker_image:
+        name: "{{ nginx_image }}"
+        source: pull
+
+    - name: Run Nginx container
+      community.docker.docker_container:
+        name: "{{ nginx_container_name }}"
+        image: "{{ nginx_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ nginx_http_port }}:80"
+          - "{{ nginx_https_port }}:443"
+        volumes:
+          - /opt/nginx/config/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  handlers:
+    - name: Restart nginx container
+      community.docker.docker_container:
+        name: "{{ nginx_container_name }}"
+        state: started
+        restart: true

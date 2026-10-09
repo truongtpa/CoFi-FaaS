@@ -1,0 +1,197 @@
+---
+# install_telegraf.yml
+# Usage: ansible-playbook -i inventory.ini install_telegraf.yml
+# hoặc: ansible-playbook -i inventory.ini install_telegraf.yml -e "influxdb_token=my-token influxdb_url=http://192.168.1.10:8086"
+
+- name: Install and configure Telegraf on cluster nodes
+  hosts: nodes
+  become: true
+  vars:
+    influxdb_url: "http://10.158.1.101:8086"
+    influxdb_token: "riNajhp_5qwclwzbVts2srS9H-Eb2menZ-Z574Z6H8KvdzOoxoxIjXcdQJNzSpBYqjoau804Sw61mEE_wrUE1Q=="
+    influxdb_org: "myorg"
+    influxdb_bucket: "metrics"
+    telegraf_interval: "1s"
+    telegraf_flush_interval: "1s"
+    telegraf_hostname: "{{ inventory_hostname }}"
+    telegraf_config_dir: "/etc/telegraf"
+    telegraf_config_file: "/etc/telegraf/telegraf.conf"
+
+  tasks:
+    - name: Install required packages (Debian/Ubuntu)
+      apt:
+        name:
+          - curl
+          - wget
+          - gnupg2
+          - apt-transport-https
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Remove old influxdata GPG keys and repo (cleanup)
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/trusted.gpg.d/influxdata.gpg
+        - /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg
+        - /etc/apt/sources.list.d/influxdata.list
+      when: ansible_os_family == "Debian"
+
+    - name: Download and install InfluxData GPG keys (both compat + new)
+      shell: |
+        curl -fsSL https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor >> /tmp/influxdata-combined.gpg
+        curl -fsSL https://repos.influxdata.com/influxdata-archive.key | gpg --dearmor >> /tmp/influxdata-combined.gpg
+        mv /tmp/influxdata-combined.gpg /etc/apt/trusted.gpg.d/influxdata.gpg
+        chmod 644 /etc/apt/trusted.gpg.d/influxdata.gpg
+      when: ansible_os_family == "Debian"
+
+    - name: Add InfluxData repository (Debian/Ubuntu)
+      copy:
+        dest: /etc/apt/sources.list.d/influxdata.list
+        content: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata.gpg] https://repos.influxdata.com/debian stable main\n"
+        owner: root
+        group: root
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Add InfluxData repository (Debian/Ubuntu)
+      copy:
+        dest: /etc/apt/sources.list.d/influxdata.list
+        content: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata.gpg] https://repos.influxdata.com/debian stable main\n"
+        owner: root
+        group: root
+        mode: "0644"
+      when: ansible_os_family == "Debian"
+
+    - name: Install Telegraf (Debian/Ubuntu)
+      apt:
+        name: telegraf
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Add InfluxData repository (RHEL/CentOS)
+      yum_repository:
+        name: influxdata
+        description: InfluxData Repository
+        baseurl: https://repos.influxdata.com/rhel/$releasever/$basearch/stable
+        gpgkey: https://repos.influxdata.com/influxdata-archive_compat.key
+        gpgcheck: yes
+        enabled: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Install Telegraf (RHEL/CentOS)
+      yum:
+        name: telegraf
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Create Telegraf config directory
+      file:
+        path: "{{ telegraf_config_dir }}/telegraf.d"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure Telegraf
+      copy:
+        dest: "{{ telegraf_config_file }}"
+        content: |
+          [global_tags]
+            host = "{{ telegraf_hostname }}"
+            cluster = "{{ group_names | first | default('default') }}"
+
+          [agent]
+            interval = "{{ telegraf_interval }}"
+            round_interval = true
+            metric_batch_size = 1000
+            metric_buffer_limit = 10000
+            collection_jitter = "0s"
+            flush_interval = "{{ telegraf_flush_interval }}"
+            flush_jitter = "0s"
+            precision = ""
+            hostname = "{{ telegraf_hostname }}"
+            omit_hostname = false
+
+          [[outputs.influxdb_v2]]
+            urls = ["{{ influxdb_url }}"]
+            token = "{{ influxdb_token }}"
+            organization = "{{ influxdb_org }}"
+            bucket = "{{ influxdb_bucket }}"
+            timeout = "5s"
+            insecure_skip_verify = false
+
+          ##
+          ## INPUT PLUGINS
+          ##
+
+          # CPU
+          [[inputs.cpu]]
+            percpu = true
+            totalcpu = true
+            collect_cpu_time = false
+            report_active = false
+
+          # Disk
+          [[inputs.disk]]
+            ignore_fs = ["tmpfs", "devtmpfs", "devfs", "iso9660", "overlay", "aufs", "squashfs"]
+
+          # Disk I/O
+          [[inputs.diskio]]
+
+          # Memory
+          [[inputs.mem]]
+
+          # Swap
+          [[inputs.swap]]
+
+          # System
+          [[inputs.system]]
+
+          # Network
+          [[inputs.net]]
+
+          # Netstat
+          [[inputs.netstat]]
+
+          # Processes
+          [[inputs.processes]]
+
+          # Kernel
+          [[inputs.kernel]]
+
+          # Internal telegraf metrics
+          [[inputs.internal]]
+            collect_memstats = false
+        owner: root
+        group: telegraf
+        mode: "0640"
+      notify: Restart Telegraf
+
+    - name: Enable and start Telegraf service
+      systemd:
+        name: telegraf
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Verify Telegraf is running
+      command: systemctl is-active telegraf
+      register: telegraf_status
+      changed_when: false
+
+    - name: Print Telegraf status
+      debug:
+        msg:
+          - "Telegraf on {{ inventory_hostname }}: {{ telegraf_status.stdout }}"
+          - "Sending metrics to: {{ influxdb_url }}"
+          - "Bucket: {{ influxdb_bucket }}"
+
+  handlers:
+    - name: Restart Telegraf
+      systemd:
+        name: telegraf
+        state: restarted

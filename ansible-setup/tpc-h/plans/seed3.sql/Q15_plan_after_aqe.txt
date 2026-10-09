@@ -1,0 +1,28 @@
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [s_suppkey#104L ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(s_suppkey#104L ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=53046]
+      +- Project [s_suppkey#104L, s_name#105, s_address#106, s_phone#108, total_revenue#2342]
+         +- SortMergeJoin [s_suppkey#104L], [supplier_no#2341L], Inner
+            :- Sort [s_suppkey#104L ASC NULLS FIRST], false, 0
+            :  +- Exchange hashpartitioning(s_suppkey#104L, 200), ENSURE_REQUIREMENTS, [plan_id=53040]
+            :     +- Filter isnotnull(s_suppkey#104L)
+            :        +- FileScan parquet [s_suppkey#104L,s_name#105,s_address#106,s_phone#108] Batched: true, DataFilters: [isnotnull(s_suppkey#104L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/supplier.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(s_suppkey)], ReadSchema: struct<s_suppkey:bigint,s_name:string,s_address:string,s_phone:string>
+            +- Sort [supplier_no#2341L ASC NULLS FIRST], false, 0
+               +- Filter (isnotnull(total_revenue#2342) AND (total_revenue#2342 = Subquery subquery#2344, [id=#53026]))
+                  :  +- Subquery subquery#2344, [id=#53026]
+                  :     +- AdaptiveSparkPlan isFinalPlan=false
+                  :        +- HashAggregate(keys=[], functions=[max(total_revenue#2343)], output=[max(total_revenue)#2348])
+                  :           +- Exchange SinglePartition, ENSURE_REQUIREMENTS, [plan_id=53024]
+                  :              +- HashAggregate(keys=[], functions=[partial_max(total_revenue#2343)], output=[max#2390])
+                  :                 +- HashAggregate(keys=[l_suppkey#2351L], functions=[sum((l_extendedprice#2354 * (1 - l_discount#2355)))], output=[total_revenue#2343])
+                  :                    +- Exchange hashpartitioning(l_suppkey#2351L, 200), ENSURE_REQUIREMENTS, [plan_id=53020]
+                  :                       +- HashAggregate(keys=[l_suppkey#2351L], functions=[partial_sum((l_extendedprice#2354 * (1 - l_discount#2355)))], output=[l_suppkey#2351L, sum#2419, isEmpty#2420])
+                  :                          +- Project [l_suppkey#2351L, l_extendedprice#2354, l_discount#2355]
+                  :                             +- Filter ((isnotnull(l_shipdate#2359) AND (l_shipdate#2359 >= 1994-03-01)) AND (l_shipdate#2359 < 1994-06-01))
+                  :                                +- FileScan parquet [l_suppkey#2351L,l_extendedprice#2354,l_discount#2355,l_shipdate#2359] Batched: true, DataFilters: [isnotnull(l_shipdate#2359), (l_shipdate#2359 >= 1994-03-01), (l_shipdate#2359 < 1994-06-01)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), GreaterThanOrEqual(l_shipdate,1994-03-01), LessThan(l_shipdate,1994-06-01)], ReadSchema: struct<l_suppkey:bigint,l_extendedprice:decimal(11,2),l_discount:decimal(11,2),l_shipdate:date>
+                  +- HashAggregate(keys=[l_suppkey#2L], functions=[sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[supplier_no#2341L, total_revenue#2342])
+                     +- Exchange hashpartitioning(l_suppkey#2L, 200), ENSURE_REQUIREMENTS, [plan_id=53035]
+                        +- HashAggregate(keys=[l_suppkey#2L], functions=[partial_sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[l_suppkey#2L, sum#2373, isEmpty#2374])
+                           +- Project [l_suppkey#2L, l_extendedprice#5, l_discount#6]
+                              +- Filter (((isnotnull(l_shipdate#10) AND (l_shipdate#10 >= 1994-03-01)) AND (l_shipdate#10 < 1994-06-01)) AND isnotnull(l_suppkey#2L))
+                                 +- FileScan parquet [l_suppkey#2L,l_extendedprice#5,l_discount#6,l_shipdate#10] Batched: true, DataFilters: [isnotnull(l_shipdate#10), (l_shipdate#10 >= 1994-03-01), (l_shipdate#10 < 1994-06-01), isnotnull..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_shipdate), GreaterThanOrEqual(l_shipdate,1994-03-01), LessThan(l_shipdate,1994-06-01..., ReadSchema: struct<l_suppkey:bigint,l_extendedprice:decimal(11,2),l_discount:decimal(11,2),l_shipdate:date>

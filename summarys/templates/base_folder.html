@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set BASE_FOLDER</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input { width: 520px; max-width: 100%; padding: 8px; }
+        button { margin-top: 12px; padding: 8px 14px; }
+        .hint { color: #666; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+<h2>Set BASE_FOLDER</h2>
+
+<form method="post">
+    <input type="hidden" name="query_name" value="{{ query_name }}">
+    <label for="base_folder">BASE_FOLDER</label>
+    <input id="base_folder" name="base_folder" value="{{ base_folder }}" placeholder="{{ default_base_folder }}">
+    <div class="hint">Default: {{ default_base_folder }}</div>
+    <button type="submit">Save session</button>
+</form>
+
+<p><a href="/?query_name={{ query_name }}">Back</a></p>
+
+</body>
+</html>

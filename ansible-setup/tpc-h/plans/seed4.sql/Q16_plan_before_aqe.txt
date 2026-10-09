@@ -1,0 +1,17 @@
+Sort [supplier_cnt#3285L DESC NULLS LAST, p_brand#75 ASC NULLS FIRST, p_type#76 ASC NULLS FIRST, p_size#77 ASC NULLS FIRST], true, 0
++- HashAggregate(keys=[p_brand#75, p_type#76, p_size#77], functions=[count(distinct ps_suppkey#93L)], output=[p_brand#75, p_type#76, p_size#77, supplier_cnt#3285L])
+   +- HashAggregate(keys=[p_brand#75, p_type#76, p_size#77], functions=[partial_count(distinct ps_suppkey#93L)], output=[p_brand#75, p_type#76, p_size#77, count#3294L])
+      +- HashAggregate(keys=[p_brand#75, p_type#76, p_size#77, ps_suppkey#93L], functions=[], output=[p_brand#75, p_type#76, p_size#77, ps_suppkey#93L])
+         +- HashAggregate(keys=[p_brand#75, p_type#76, p_size#77, ps_suppkey#93L], functions=[], output=[p_brand#75, p_type#76, p_size#77, ps_suppkey#93L])
+            +- Project [ps_suppkey#93L, p_brand#75, p_type#76, p_size#77]
+               +- SortMergeJoin [ps_partkey#92L], [p_partkey#72L], Inner
+                  :- BroadcastHashJoin [ps_suppkey#93L], [s_suppkey#104L], LeftAnti, BuildRight, true
+                  :  :- Project [ps_partkey#92L, ps_suppkey#93L]
+                  :  :  +- Filter isnotnull(ps_partkey#92L)
+                  :  :     +- FileScan parquet [ps_partkey#92L,ps_suppkey#93L] Batched: true, DataFilters: [isnotnull(ps_partkey#92L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/partsupp.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(ps_partkey)], ReadSchema: struct<ps_partkey:bigint,ps_suppkey:bigint>
+                  :  +- Project [s_suppkey#104L]
+                  :     +- Filter (isnotnull(s_comment#110) AND s_comment#110 LIKE %Customer%Complaints%)
+                  :        +- FileScan parquet [s_suppkey#104L,s_comment#110] Batched: true, DataFilters: [isnotnull(s_comment#110), s_comment#110 LIKE %Customer%Complaints%], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/supplier.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(s_comment)], ReadSchema: struct<s_suppkey:bigint,s_comment:string>
+                  +- Project [p_partkey#72L, p_brand#75, p_type#76, p_size#77]
+                     +- Filter (((((isnotnull(p_brand#75) AND isnotnull(p_type#76)) AND NOT (p_brand#75 = Brand#15)) AND NOT StartsWith(p_type#76, MEDIUM ANODIZED)) AND p_size#77 IN (13,49,24,25,46,47,41,21)) AND isnotnull(p_partkey#72L))
+                        +- FileScan parquet [p_partkey#72L,p_brand#75,p_type#76,p_size#77] Batched: true, DataFilters: [isnotnull(p_brand#75), isnotnull(p_type#76), NOT (p_brand#75 = Brand#15), NOT StartsWith(p_type#..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/part.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(p_brand), IsNotNull(p_type), Not(EqualTo(p_brand,Brand#15)), Not(StringStartsWith(p_ty..., ReadSchema: struct<p_partkey:bigint,p_brand:string,p_type:string,p_size:int>

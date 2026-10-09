@@ -1,0 +1,22 @@
+- name: Install mc and sync AWS S3 to MinIO
+  hosts: minio
+  become: yes
+  gather_facts: no
+
+  vars:
+    minio_endpoint: "http://localhost:9000"
+    minio_access_key: "admin"
+    minio_secret_key: "lannion-enssat"
+
+  tasks:
+  - name: Install MinIO client (mc)
+    shell: |
+      curl -sSL https://dl.min.io/aistor/mc/release/linux-amd64/mc \
+        -o /usr/local/bin/mc
+      chmod +x /usr/local/bin/mc
+    args:
+      creates: /usr/local/bin/mc
+
+  - name: Configure MinIO alias
+    shell: |
+      mc alias set localhost {{ minio_endpoint }} {{ minio_access_key }} {{ minio_secret_key }}

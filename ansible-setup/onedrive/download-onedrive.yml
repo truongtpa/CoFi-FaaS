@@ -1,0 +1,63 @@
+---
+- name: Tải từ OneDrive về server
+  hosts: all
+  become: yes
+  vars:
+    remote_path: "CoFi-BLOOM-FaaS.zip"
+    remote_dir: "Ph.D/5. Source code"
+    download_dest: /root
+    download_extract: false
+    rclone_remote: onedrive
+    onedrive_token: ""
+    onedrive_drive_type: personal
+    onedrive_drive_id: e878c29078124394
+    _src: "{{ rclone_remote }}:{{ remote_dir }}/{{ remote_path }}"
+    _dest: "{{ download_dest }}/{{ remote_path | basename }}"
+
+  tasks:
+    - import_tasks: tasks/rclone-setup.yml
+
+    - name: Liệt kê thư mục trên OneDrive
+      command:
+        argv: [rclone, lsl, --max-depth, "1", "{{ rclone_remote }}:{{ remote_dir }}"]
+      register: _ls
+      changed_when: false
+      when: not remote_path
+
+    - debug:
+        var: _ls.stdout_lines
+      when: not remote_path
+
+    - name: Tải về
+      when: remote_path | length > 0
+      block:
+        - name: Xem nguồn là file hay thư mục
+          command:
+            argv: [rclone, lsjson, --stat, "{{ _src }}"]
+          register: _stat
+          changed_when: false
+
+        - set_fact:
+            _is_dir: "{{ (_stat.stdout | from_json).IsDir }}"
+
+        - name: Tạo thư mục đích
+          file:
+            path: "{{ download_dest }}"
+            state: directory
+
+        - name: Lệnh xem tiến độ (chạy ở terminal khác)
+          debug:
+            msg: "ssh -t -i {{ lookup('ansible.builtin.config', 'DEFAULT_PRIVATE_KEY_FILE') }} {{ ansible_user | default('root') }}@{{ ansible_host }} rclone-progress"
+
+        - name: Tải file
+          command:
+            argv: [rclone, copyto, "{{ _src }}", "{{ _dest }}"]
+          when: not _is_dir
+
+        - name: Tải thư mục
+          command:
+            argv: [rclone, copy, "{{ _src }}", "{{ _dest }}"]
+          when: _is_dir
+
+        - debug:
+            msg: "Đã tải về {{ inventory_hostname }}:{{ _dest }}"

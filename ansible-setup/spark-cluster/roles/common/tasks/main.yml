@@ -1,0 +1,28 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages
+  apt:
+    name:
+      - wget
+      - curl
+      - vim
+      - net-tools
+      - software-properties-common
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    mode: '0755'
+  loop:
+    - "{{ spark_local_dirs }}"
+    - "{{ spark_log_dir }}"

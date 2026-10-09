@@ -1,0 +1,35 @@
+- name: Remove tagdrop to test
+  hosts: nodes
+  become: true
+  tasks:
+    - name: Update cAdvisor config - no tagdrop
+      copy:
+        dest: /etc/telegraf/telegraf.d/cadvisor.conf
+        content: |
+          [[inputs.prometheus]]
+            urls = ["https://127.0.0.1:10250/metrics/cadvisor"]
+            bearer_token = "/etc/telegraf/kubelet-token"
+            insecure_skip_verify = true
+            metric_version = 2
+
+            fieldinclude = [
+              "container_cpu_usage_seconds_total",
+              "container_memory_working_set_bytes",
+              "container_fs_reads_bytes_total",
+              "container_fs_writes_bytes_total",
+              "container_network_receive_bytes_total",
+              "container_network_transmit_bytes_total",
+            ]
+
+            [inputs.prometheus.tags]
+              scrape_source = "cadvisor"
+        owner: root
+        group: telegraf
+        mode: "0640"
+      notify: Restart Telegraf
+
+  handlers:
+    - name: Restart Telegraf
+      systemd:
+        name: telegraf
+        state: restarted

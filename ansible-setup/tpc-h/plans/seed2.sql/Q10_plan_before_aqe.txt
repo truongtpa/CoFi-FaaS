@@ -1,0 +1,21 @@
+TakeOrderedAndProject(limit=20, orderBy=[revenue#1314 DESC NULLS LAST], output=[c_custkey#54L,c_name#55,revenue#1314,c_acctbal#59,n_name#121,c_address#56,c_phone#58,c_comment#61])
++- HashAggregate(keys=[c_custkey#54L, c_name#55, c_acctbal#59, c_phone#58, n_name#121, c_address#56, c_comment#61], functions=[sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[c_custkey#54L, c_name#55, revenue#1314, c_acctbal#59, n_name#121, c_address#56, c_phone#58, c_comment#61])
+   +- HashAggregate(keys=[c_custkey#54L, c_name#55, c_acctbal#59, c_phone#58, n_name#121, c_address#56, c_comment#61], functions=[partial_sum((l_extendedprice#5 * (1 - l_discount#6)))], output=[c_custkey#54L, c_name#55, c_acctbal#59, c_phone#58, n_name#121, c_address#56, c_comment#61, sum#1326, isEmpty#1327])
+      +- Project [c_custkey#54L, c_name#55, c_address#56, c_phone#58, c_acctbal#59, c_comment#61, l_extendedprice#5, l_discount#6, n_name#121]
+         +- BroadcastHashJoin [c_nationkey#57L], [n_nationkey#120L], Inner, BuildRight, false
+            :- Project [c_custkey#54L, c_name#55, c_address#56, c_nationkey#57L, c_phone#58, c_acctbal#59, c_comment#61, l_extendedprice#5, l_discount#6]
+            :  +- SortMergeJoin [o_orderkey#34L], [l_orderkey#0L], Inner
+            :     :- Project [c_custkey#54L, c_name#55, c_address#56, c_nationkey#57L, c_phone#58, c_acctbal#59, c_comment#61, o_orderkey#34L]
+            :     :  +- SortMergeJoin [c_custkey#54L], [o_custkey#35L], Inner
+            :     :     :- Project [c_custkey#54L, c_name#55, c_address#56, c_nationkey#57L, c_phone#58, c_acctbal#59, c_comment#61]
+            :     :     :  +- Filter (isnotnull(c_custkey#54L) AND isnotnull(c_nationkey#57L))
+            :     :     :     +- FileScan parquet [c_custkey#54L,c_name#55,c_address#56,c_nationkey#57L,c_phone#58,c_acctbal#59,c_comment#61] Batched: true, DataFilters: [isnotnull(c_custkey#54L), isnotnull(c_nationkey#57L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/customer.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(c_custkey), IsNotNull(c_nationkey)], ReadSchema: struct<c_custkey:bigint,c_name:string,c_address:string,c_nationkey:bigint,c_phone:string,c_acctba...
+            :     :     +- Project [o_orderkey#34L, o_custkey#35L]
+            :     :        +- Filter ((((isnotnull(o_orderdate#38) AND (o_orderdate#38 >= 1993-02-01)) AND (o_orderdate#38 < 1993-05-01)) AND isnotnull(o_custkey#35L)) AND isnotnull(o_orderkey#34L))
+            :     :           +- FileScan parquet [o_orderkey#34L,o_custkey#35L,o_orderdate#38] Batched: true, DataFilters: [isnotnull(o_orderdate#38), (o_orderdate#38 >= 1993-02-01), (o_orderdate#38 < 1993-05-01), isnotn..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/orders.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(o_orderdate), GreaterThanOrEqual(o_orderdate,1993-02-01), LessThan(o_orderdate,1993-05..., ReadSchema: struct<o_orderkey:bigint,o_custkey:bigint,o_orderdate:date>
+            :     +- Project [l_orderkey#0L, l_extendedprice#5, l_discount#6]
+            :        +- Filter ((isnotnull(l_returnflag#8) AND (l_returnflag#8 = R)) AND isnotnull(l_orderkey#0L))
+            :           +- FileScan parquet [l_orderkey#0L,l_extendedprice#5,l_discount#6,l_returnflag#8] Batched: true, DataFilters: [isnotnull(l_returnflag#8), (l_returnflag#8 = R), isnotnull(l_orderkey#0L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/lineitem.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(l_returnflag), EqualTo(l_returnflag,R), IsNotNull(l_orderkey)], ReadSchema: struct<l_orderkey:bigint,l_extendedprice:decimal(11,2),l_discount:decimal(11,2),l_returnflag:string>
+            +- Project [n_nationkey#120L, n_name#121]
+               +- Filter isnotnull(n_nationkey#120L)
+                  +- FileScan parquet [n_nationkey#120L,n_name#121] Batched: true, DataFilters: [isnotnull(n_nationkey#120L)], Format: Parquet, Location: InMemoryFileIndex(1 paths)[s3a://tpch-100/nation.parquet], PartitionFilters: [], PushedFilters: [IsNotNull(n_nationkey)], ReadSchema: struct<n_nationkey:bigint,n_name:string>

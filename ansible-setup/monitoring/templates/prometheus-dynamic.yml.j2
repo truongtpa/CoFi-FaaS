@@ -1,0 +1,23 @@
+# templates/prometheus-dynamic.yml.j2
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'k8s-nodes'
+    static_configs:
+      - targets:
+{% for host in groups['k8s_nodes'] %}
+        - '{{ hostvars[host].ansible_host }}:9100'
+{% endfor %}
+
+  - job_name: 'minio-nodes'
+    static_configs:
+      - targets:
+{% for host in groups['minio'] %}
+        - '{{ hostvars[host].ansible_host }}:9100'
+{% endfor %}

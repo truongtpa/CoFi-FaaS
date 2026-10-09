@@ -1,0 +1,23 @@
+---
+- name: Install NFS client on all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install NFS client
+      apt:
+        name: nfs-common
+        state: present
+
+    - name: Verify NFS client installed
+      command: which mount.nfs
+      register: nfs_check
+      changed_when: false
+
+    - name: Display NFS client path
+      debug:
+        msg: "NFS client installed at: {{ nfs_check.stdout }}"
